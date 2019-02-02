@@ -5,3 +5,4 @@ authors = ["Tomas Sedovic <tomas@sedovic.cz>"]
 edition = "2018"
 
 [dependencies]
+quicksilver = { version = "0.3.6", default-features = false, features = ["collisions", "complex_shapes", "immi_ui", "fonts", "saving", "rodio"]}
