@@ -14,8 +14,7 @@ use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq)]
 struct Entity {
-    x: i32,
-    y: i32,
+    pos: Vector,
     glyph: char,
     color: Color,
     hp: i32,
@@ -24,8 +23,7 @@ struct Entity {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Tile {
-    x: i32,
-    y: i32,
+    pos: Vector,
     glyph: char,
     color: Color,
 }
@@ -37,8 +35,7 @@ fn generate_map(size: Vector) -> Vec<Tile> {
     for x in 0..width {
         for y in 0..height {
             let mut tile = Tile {
-                x: x as i32,
-                y: y as i32,
+                pos: Vector::new(x as f32, y as f32),
                 glyph: '.',
                 color: Color::BLACK,
             };
@@ -55,16 +52,14 @@ fn generate_map(size: Vector) -> Vec<Tile> {
 fn generate_entities() -> Vec<Entity> {
     vec![
         Entity {
-            x: 9,
-            y: 6,
+            pos: Vector::new(9, 6),
             glyph: 'g',
             color: Color::RED,
             hp: 1,
             max_hp: 1,
         },
         Entity {
-            x: 2,
-            y: 4,
+            pos: Vector::new(2, 4),
             glyph: 'g',
             color: Color::RED,
             hp: 1,
@@ -132,8 +127,7 @@ impl State for Game {
         let mut entities = generate_entities();
         let player_id = entities.len();
         entities.push(Entity {
-            x: 5,
-            y: 3,
+            pos: Vector::new(5, 3),
             glyph: '@',
             color: Color::BLUE,
             hp: 3,
@@ -158,16 +152,19 @@ impl State for Game {
 
         let player = &mut self.entities[self.player_id];
         if window.keyboard()[Key::Left] == Pressed {
-            player.x -= 1;
+            player.pos.x -= 1.0;
         }
         if window.keyboard()[Key::Right] == Pressed {
-            player.x += 1;
+            player.pos.x += 1.0;
         }
         if window.keyboard()[Key::Up] == Pressed {
-            player.y -= 1;
+            player.pos.y -= 1.0;
         }
         if window.keyboard()[Key::Down] == Pressed {
-            player.y += 1;
+            player.pos.y += 1.0;
+        }
+        if window.keyboard()[Key::Escape].is_down() {
+            window.close();
         }
         Ok(())
     }
@@ -205,9 +202,9 @@ impl State for Game {
             Ok(())
         })?;
 
-        let offset = Vector::new(50, 150);
+        let offset_px = Vector::new(50, 150);
         let map_size = self.map_size;
-        let tile_size = self.tile_size;
+        let tile_size_px = self.tile_size;
 
         // NOTE: Need to do partial borrows here to prevent borrowing
         // the whole self as mutable.
@@ -215,9 +212,9 @@ impl State for Game {
         tilemap.execute(|tilemap| {
             for tile in map.iter() {
                 if let Some(image) = tilemap.get(&tile.glyph) {
-                    let pos = Vector::new(tile.x as f32 * tile_size.x, tile.y as f32 * tile_size.y);
+                    let pos_px = offset_px + tile.pos.times(tile_size_px);
                     window.draw(
-                        &Rectangle::new(offset.translate(pos), image.area().size()),
+                        &Rectangle::new(pos_px, image.area().size()),
                         Blended(&image, tile.color),
                     );
                 }
@@ -229,9 +226,9 @@ impl State for Game {
         tilemap.execute(|tilemap| {
             for entity in entities.iter() {
                 if let Some(image) = tilemap.get(&entity.glyph) {
-                    let pos = (entity.x as f32 * tile_size.x, entity.y as f32 * tile_size.y);
+                    let pos_px = offset_px + entity.pos.times(tile_size_px);
                     window.draw(
-                        &Rectangle::new(offset.translate(pos), image.area().size()),
+                        &Rectangle::new(pos_px, image.area().size()),
                         Blended(&image, entity.color),
                     );
                 }
@@ -241,21 +238,19 @@ impl State for Game {
 
         // Draw the health bar
         let player = &self.entities[self.player_id];
-        let full_health_width = 100.0;
-        let current_health_width = (player.hp as f32 / player.max_hp as f32) * full_health_width;
+        let full_health_width_px = 100.0;
+        let current_health_width_px =
+            (player.hp as f32 / player.max_hp as f32) * full_health_width_px;
+        let map_size_px = map_size.times(tile_size_px);
+        let health_bar_pos_px = offset_px + Vector::new(map_size_px.x, 0.0);
+        // Full health
         window.draw(
-            &Rectangle::new((tile_size.x as f32, 0.0), (full_health_width, tile_size.y))
-                .translate(offset)
-                .translate(((map_size.x * tile_size.x) as f32, 0.0)),
+            &Rectangle::new(health_bar_pos_px, (full_health_width_px, tile_size_px.y)),
             Col(Color::RED.with_alpha(0.5)),
         );
+        // Current health
         window.draw(
-            &Rectangle::new(
-                (tile_size.x as f32, 0.0),
-                (current_health_width, tile_size.y),
-            )
-            .translate(offset)
-            .translate(((map_size.x * tile_size.x) as f32, 0.0)),
+            &Rectangle::new(health_bar_pos_px, (current_health_width_px, tile_size_px.y)),
             Col(Color::RED),
         );
 
