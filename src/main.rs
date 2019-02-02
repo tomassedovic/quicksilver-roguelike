@@ -1,14 +1,21 @@
 use quicksilver::{
-    geom::{Shape, Vector},
-    graphics::{Background::Img, Color, Font, FontStyle, Image},
+    combinators::result,
+    geom::{Rectangle, Shape, Vector},
+    graphics::{
+        Background::{Blended, Img},
+        Color, Font, FontStyle, Image,
+    },
     lifecycle::{run, Asset, Settings, State, Window},
     Future, Result,
 };
+
+use std::collections::HashMap;
 
 struct Game {
     title: Asset<Image>,
     mononoki_font_info: Asset<Image>,
     square_font_info: Asset<Image>,
+    tilemap: Asset<HashMap<char, Image>>,
 }
 
 impl State for Game {
@@ -38,10 +45,27 @@ impl State for Game {
             )
         }));
 
+        let tilemap_source = "#@g.";
+        let (width, height) = (24, 24);
+        let tilemap = Asset::new(Font::load(font_square).and_then(move |text| {
+            let tiles = text
+                .render(tilemap_source, &FontStyle::new(height as f32, Color::WHITE))
+                .expect("Could not render the font tilemap.");
+            let mut tilemap = HashMap::new();
+            for (index, glyph) in tilemap_source.chars().enumerate() {
+                let pos = (index as i32 * width, 0);
+                let size = (width, height);
+                let tile = tiles.subimage(Rectangle::new(pos, size));
+                tilemap.insert(glyph, tile);
+            }
+            result(Ok(tilemap))
+        }));
+
         Ok(Self {
             title,
             mononoki_font_info,
             square_font_info,
+            tilemap,
         })
     }
 
@@ -75,6 +99,38 @@ impl State for Game {
                     .translate((2, window.screen_size().y as i32 - 30)),
                 Img(&image),
             );
+            Ok(())
+        })?;
+
+        self.tilemap.execute(|tilemap| {
+            let tiles: &[(char, i32, i32, Color)] = &[
+                ('#', 0, 0, Color::BLACK),
+                ('#', 0, 1, Color::BLACK),
+                ('#', 0, 2, Color::BLACK),
+                ('#', 0, 3, Color::BLACK),
+                ('g', 1, 1, Color::RED),
+                ('.', 1, 2, Color::BLACK),
+                ('.', 2, 3, Color::BLACK),
+                ('.', 2, 1, Color::BLACK),
+                ('.', 3, 2, Color::BLACK),
+                ('g', 3, 1, Color::RED),
+                ('@', 2, 2, Color::BLUE),
+                ('g', 1, 3, Color::RED),
+                ('g', 3, 3, Color::RED),
+                ('#', 1, 0, Color::BLACK),
+                ('#', 2, 0, Color::BLACK),
+                ('#', 3, 0, Color::BLACK),
+            ];
+            let offset = Vector::new(50, 150);
+            for (glyph, x, y, color) in tiles {
+                if let Some(tile) = tilemap.get(glyph) {
+                    let pos = (x * 24, y * 24);
+                    window.draw(
+                        &Rectangle::new(offset.translate(pos), tile.area().size()),
+                        Blended(&tile, *color),
+                    );
+                }
+            }
             Ok(())
         })?;
 
