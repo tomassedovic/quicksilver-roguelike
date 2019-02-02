@@ -16,6 +16,7 @@ struct Game {
     mononoki_font_info: Asset<Image>,
     square_font_info: Asset<Image>,
     tilemap: Asset<HashMap<char, Image>>,
+    tiles: &'static [(char, i32, i32, Color)],
 }
 
 impl State for Game {
@@ -61,11 +62,31 @@ impl State for Game {
             result(Ok(tilemap))
         }));
 
+        let tiles: &[(char, i32, i32, Color)] = &[
+            ('#', 0, 0, Color::BLACK),
+            ('#', 0, 1, Color::BLACK),
+            ('#', 0, 2, Color::BLACK),
+            ('#', 0, 3, Color::BLACK),
+            ('g', 1, 1, Color::RED),
+            ('.', 1, 2, Color::BLACK),
+            ('.', 2, 3, Color::BLACK),
+            ('.', 2, 1, Color::BLACK),
+            ('.', 3, 2, Color::BLACK),
+            ('g', 3, 1, Color::RED),
+            ('@', 2, 2, Color::BLUE),
+            ('g', 1, 3, Color::RED),
+            ('g', 3, 3, Color::RED),
+            ('#', 1, 0, Color::BLACK),
+            ('#', 2, 0, Color::BLACK),
+            ('#', 3, 0, Color::BLACK),
+        ];
+
         Ok(Self {
             title,
             mononoki_font_info,
             square_font_info,
             tilemap,
+            tiles,
         })
     }
 
@@ -102,25 +123,10 @@ impl State for Game {
             Ok(())
         })?;
 
-        self.tilemap.execute(|tilemap| {
-            let tiles: &[(char, i32, i32, Color)] = &[
-                ('#', 0, 0, Color::BLACK),
-                ('#', 0, 1, Color::BLACK),
-                ('#', 0, 2, Color::BLACK),
-                ('#', 0, 3, Color::BLACK),
-                ('g', 1, 1, Color::RED),
-                ('.', 1, 2, Color::BLACK),
-                ('.', 2, 3, Color::BLACK),
-                ('.', 2, 1, Color::BLACK),
-                ('.', 3, 2, Color::BLACK),
-                ('g', 3, 1, Color::RED),
-                ('@', 2, 2, Color::BLUE),
-                ('g', 1, 3, Color::RED),
-                ('g', 3, 3, Color::RED),
-                ('#', 1, 0, Color::BLACK),
-                ('#', 2, 0, Color::BLACK),
-                ('#', 3, 0, Color::BLACK),
-            ];
+        // NOTE: Need to do partial borrows here to prevent borrowing
+        // the whole self as mutable.
+        let (tilemap, tiles) = (&mut self.tilemap, self.tiles);
+        tilemap.execute(|tilemap| {
             let offset = Vector::new(50, 150);
             for (glyph, x, y, color) in tiles {
                 if let Some(tile) = tilemap.get(glyph) {
