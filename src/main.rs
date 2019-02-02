@@ -11,12 +11,20 @@ use quicksilver::{
 
 use std::collections::HashMap;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Entity {
+    x: i32,
+    y: i32,
+    glyph: char,
+    color: Color,
+}
+
 struct Game {
     title: Asset<Image>,
     mononoki_font_info: Asset<Image>,
     square_font_info: Asset<Image>,
     tilemap: Asset<HashMap<char, Image>>,
-    tiles: &'static [(char, i32, i32, Color)],
+    entities: Vec<Entity>,
 }
 
 impl State for Game {
@@ -62,23 +70,103 @@ impl State for Game {
             result(Ok(tilemap))
         }));
 
-        let tiles: &[(char, i32, i32, Color)] = &[
-            ('#', 0, 0, Color::BLACK),
-            ('#', 0, 1, Color::BLACK),
-            ('#', 0, 2, Color::BLACK),
-            ('#', 0, 3, Color::BLACK),
-            ('g', 1, 1, Color::RED),
-            ('.', 1, 2, Color::BLACK),
-            ('.', 2, 3, Color::BLACK),
-            ('.', 2, 1, Color::BLACK),
-            ('.', 3, 2, Color::BLACK),
-            ('g', 3, 1, Color::RED),
-            ('@', 2, 2, Color::BLUE),
-            ('g', 1, 3, Color::RED),
-            ('g', 3, 3, Color::RED),
-            ('#', 1, 0, Color::BLACK),
-            ('#', 2, 0, Color::BLACK),
-            ('#', 3, 0, Color::BLACK),
+        let entities = vec![
+            Entity {
+                glyph: '#',
+                x: 0,
+                y: 0,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: '#',
+                x: 0,
+                y: 1,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: '#',
+                x: 0,
+                y: 2,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: '#',
+                x: 0,
+                y: 3,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: 'g',
+                x: 1,
+                y: 1,
+                color: Color::RED,
+            },
+            Entity {
+                glyph: '.',
+                x: 1,
+                y: 2,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: '.',
+                x: 2,
+                y: 3,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: '.',
+                x: 2,
+                y: 1,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: '.',
+                x: 3,
+                y: 2,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: 'g',
+                x: 3,
+                y: 1,
+                color: Color::RED,
+            },
+            Entity {
+                glyph: '@',
+                x: 2,
+                y: 2,
+                color: Color::BLUE,
+            },
+            Entity {
+                glyph: 'g',
+                x: 1,
+                y: 3,
+                color: Color::RED,
+            },
+            Entity {
+                glyph: 'g',
+                x: 3,
+                y: 3,
+                color: Color::RED,
+            },
+            Entity {
+                glyph: '#',
+                x: 1,
+                y: 0,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: '#',
+                x: 2,
+                y: 0,
+                color: Color::BLACK,
+            },
+            Entity {
+                glyph: '#',
+                x: 3,
+                y: 0,
+                color: Color::BLACK,
+            },
         ];
 
         Ok(Self {
@@ -86,7 +174,7 @@ impl State for Game {
             mononoki_font_info,
             square_font_info,
             tilemap,
-            tiles,
+            entities,
         })
     }
 
@@ -125,15 +213,15 @@ impl State for Game {
 
         // NOTE: Need to do partial borrows here to prevent borrowing
         // the whole self as mutable.
-        let (tilemap, tiles) = (&mut self.tilemap, self.tiles);
+        let (tilemap, entities) = (&mut self.tilemap, &self.entities);
         tilemap.execute(|tilemap| {
             let offset = Vector::new(50, 150);
-            for (glyph, x, y, color) in tiles {
-                if let Some(tile) = tilemap.get(glyph) {
-                    let pos = (x * 24, y * 24);
+            for entity in entities {
+                if let Some(tile) = tilemap.get(&entity.glyph) {
+                    let pos = (entity.x * 24, entity.y * 24);
                     window.draw(
                         &Rectangle::new(offset.translate(pos), tile.area().size()),
-                        Blended(&tile, *color),
+                        Blended(&tile, entity.color),
                     );
                 }
             }
