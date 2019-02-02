@@ -19,12 +19,59 @@ struct Entity {
     color: Color,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Tile {
+    x: i32,
+    y: i32,
+    glyph: char,
+    color: Color,
+}
+
+fn generate_map(width: usize, height: usize) -> Vec<Tile> {
+    let mut map = Vec::with_capacity(width * height);
+    for x in 0..width {
+        for y in 0..height {
+            let mut tile = Tile {
+                x: x as i32,
+                y: y as i32,
+                glyph: '.',
+                color: Color::BLACK,
+            };
+
+            if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
+                tile.glyph = '#';
+            };
+            map.push(tile);
+        }
+    }
+    map
+}
+
+fn generate_entities() -> Vec<Entity> {
+    vec![
+        Entity {
+            x: 9,
+            y: 6,
+            glyph: 'g',
+            color: Color::RED,
+        },
+        Entity {
+            x: 2,
+            y: 4,
+            glyph: 'g',
+            color: Color::RED,
+        },
+    ]
+}
+
 struct Game {
     title: Asset<Image>,
     mononoki_font_info: Asset<Image>,
     square_font_info: Asset<Image>,
     tilemap: Asset<HashMap<char, Image>>,
+    map: Vec<Tile>,
     entities: Vec<Entity>,
+    player_id: usize,
 }
 
 impl State for Game {
@@ -70,111 +117,24 @@ impl State for Game {
             result(Ok(tilemap))
         }));
 
-        let entities = vec![
-            Entity {
-                glyph: '#',
-                x: 0,
-                y: 0,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: '#',
-                x: 0,
-                y: 1,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: '#',
-                x: 0,
-                y: 2,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: '#',
-                x: 0,
-                y: 3,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: 'g',
-                x: 1,
-                y: 1,
-                color: Color::RED,
-            },
-            Entity {
-                glyph: '.',
-                x: 1,
-                y: 2,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: '.',
-                x: 2,
-                y: 3,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: '.',
-                x: 2,
-                y: 1,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: '.',
-                x: 3,
-                y: 2,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: 'g',
-                x: 3,
-                y: 1,
-                color: Color::RED,
-            },
-            Entity {
-                glyph: '@',
-                x: 2,
-                y: 2,
-                color: Color::BLUE,
-            },
-            Entity {
-                glyph: 'g',
-                x: 1,
-                y: 3,
-                color: Color::RED,
-            },
-            Entity {
-                glyph: 'g',
-                x: 3,
-                y: 3,
-                color: Color::RED,
-            },
-            Entity {
-                glyph: '#',
-                x: 1,
-                y: 0,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: '#',
-                x: 2,
-                y: 0,
-                color: Color::BLACK,
-            },
-            Entity {
-                glyph: '#',
-                x: 3,
-                y: 0,
-                color: Color::BLACK,
-            },
-        ];
+        let map = generate_map(20, 15);
+        let mut entities = generate_entities();
+        let player_id = entities.len();
+        entities.push(Entity {
+            x: 5,
+            y: 3,
+            glyph: '@',
+            color: Color::BLUE,
+        });
 
         Ok(Self {
             title,
             mononoki_font_info,
             square_font_info,
             tilemap,
+            map,
             entities,
+            player_id,
         })
     }
 
@@ -213,15 +173,30 @@ impl State for Game {
 
         // NOTE: Need to do partial borrows here to prevent borrowing
         // the whole self as mutable.
+        let (tilemap, map) = (&mut self.tilemap, &self.map);
+        tilemap.execute(|tilemap| {
+            let offset = Vector::new(50, 150);
+            for tile in map.iter() {
+                if let Some(image) = tilemap.get(&tile.glyph) {
+                    let pos = (tile.x * 24, tile.y * 24);
+                    window.draw(
+                        &Rectangle::new(offset.translate(pos), image.area().size()),
+                        Blended(&image, tile.color),
+                    );
+                }
+            }
+            Ok(())
+        })?;
+
         let (tilemap, entities) = (&mut self.tilemap, &self.entities);
         tilemap.execute(|tilemap| {
             let offset = Vector::new(50, 150);
-            for entity in entities {
-                if let Some(tile) = tilemap.get(&entity.glyph) {
+            for entity in entities.iter() {
+                if let Some(image) = tilemap.get(&entity.glyph) {
                     let pos = (entity.x * 24, entity.y * 24);
                     window.draw(
-                        &Rectangle::new(offset.translate(pos), tile.area().size()),
-                        Blended(&tile, entity.color),
+                        &Rectangle::new(offset.translate(pos), image.area().size()),
+                        Blended(&image, entity.color),
                     );
                 }
             }
