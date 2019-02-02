@@ -97,7 +97,7 @@ impl State for Game {
         let mononoki_font_info = Asset::new(Font::load(font_mononoki).and_then(move |font| {
             font.render(
                 "Mononoki font by Matthias Tellen, terms: SIL Open Font License 1.1",
-                &text_style.clone(),
+                &text_style,
             )
         }));
         let square_font_info = Asset::new(Font::load(font_mononoki).and_then(move |font| {
