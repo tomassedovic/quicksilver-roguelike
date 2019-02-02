@@ -5,6 +5,7 @@ use quicksilver::{
         Background::{Blended, Img},
         Color, Font, FontStyle, Image,
     },
+    input::Key,
     lifecycle::{run, Asset, Settings, State, Window},
     Future, Result,
 };
@@ -136,6 +137,25 @@ impl State for Game {
             entities,
             player_id,
         })
+    }
+
+    fn update(&mut self, window: &mut Window) -> Result<()> {
+        use quicksilver::input::ButtonState::*;
+
+        let player = &mut self.entities[self.player_id];
+        if window.keyboard()[Key::Left] == Pressed {
+            player.x -= 1;
+        }
+        if window.keyboard()[Key::Right] == Pressed {
+            player.x += 1;
+        }
+        if window.keyboard()[Key::Up] == Pressed {
+            player.y -= 1;
+        }
+        if window.keyboard()[Key::Down] == Pressed {
+            player.y += 1;
+        }
+        Ok(())
     }
 
     fn draw(&mut self, window: &mut Window) -> Result<()> {
