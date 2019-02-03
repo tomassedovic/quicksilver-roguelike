@@ -85,6 +85,7 @@ struct Game {
     title: Asset<Image>,
     mononoki_font_info: Asset<Image>,
     square_font_info: Asset<Image>,
+    inventory: Asset<Image>,
     map_size: Vector,
     map: Vec<Tile>,
     entities: Vec<Entity>,
@@ -114,6 +115,13 @@ impl State for Game {
         let square_font_info = Asset::new(Font::load(font_mononoki).and_then(move |font| {
             font.render(
                 "Square font by Wouter Van Oortmerssen, terms: CC BY 3.0",
+                &FontStyle::new(20.0, Color::BLACK),
+            )
+        }));
+
+        let inventory = Asset::new(Font::load(font_mononoki).and_then(move |font| {
+            font.render(
+                "Inventory:\n[A] Sword\n[B] Shield\n[C] Darts",
                 &FontStyle::new(20.0, Color::BLACK),
             )
         }));
@@ -152,6 +160,7 @@ impl State for Game {
             title,
             mononoki_font_info,
             square_font_info,
+            inventory,
             map_size,
             map,
             entities,
@@ -273,6 +282,16 @@ impl State for Game {
             &Rectangle::new(health_bar_pos_px, (current_health_width_px, tile_size_px.y)),
             Col(Color::RED),
         );
+
+        self.inventory.execute(|image| {
+            window.draw(
+                &image
+                    .area()
+                    .translate(health_bar_pos_px + Vector::new(0, tile_size_px.y)),
+                Img(&image),
+            );
+            Ok(())
+        })?;
 
         Ok(())
     }
