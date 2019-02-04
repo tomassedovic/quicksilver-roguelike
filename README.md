@@ -27,7 +27,7 @@ your square maps and readable text *at the same time*!
 
 It will look like this:
 
-![./screenshot.png]
+![Final game in the web browser](screenshots/final.png)
 
 
 ## Setup
@@ -78,7 +78,11 @@ the default program:
     $ cd quicksilver-roguelike
     $ cargo run --release
 
-It will print `Hello, world!`.
+It will print:
+
+```
+Hello, world!
+```
 
 
 ## Quicksilver
@@ -113,7 +117,7 @@ text as before.
 > speed comparisons. Rust's debug builds are slower than you think.
 > They're slower than unoptimised C++. They're slower than Ruby.
 
-## Hello, Web!
+## Hello, Game!
 
 First things we'll do is create a window and print some text on it.
 We'll do all our coding in the `src/main.rs` file in your repository.
@@ -786,7 +790,7 @@ quicksilver::graphics::Background::Blended
 
 And that should do it:
 
-![Tilemap in the top-left corner](05_corner_tilemap.png)
+![Tilemap in the top-left corner](screenshots/05_corner_tilemap.png)
 
 Looking good, but the map is in the top-left corner, obscured by the
 title text! Let's fix that.
@@ -809,7 +813,7 @@ window.draw(
 );
 ```
 
-![Offset map](06_offset_map.png)
+![Offset map](screenshots/06_offset_map.png)
 
 Better.
 
@@ -882,10 +886,9 @@ should! Look what happens if we don't:
 
 ![Half square](screenshots/07_half_square.png)
 
-> Glitches like these are one of gamedev's underrated pleasures.
+> Glitches like these are one of gamedev's lesser-known pleasures.
 
-Interesting, but not *quite* what we want. Make the tile size a proper
-square:
+Make the tile size a proper square:
 
 ```rust
 let tile_size_px = Vector::new(24, 24);
@@ -896,7 +899,7 @@ let tile_size_px = Vector::new(24, 24);
 Take that, 1950s terminals!
 
 > Z3, one of the first computers with a terminal had *1408 bits* of
-> data memory. Our tilemap image *alone* has 9216 **bytes**.
+> data memory. Our tilemap image *alone* has **11,520 bytes**.
 
 
 ## Square credit
@@ -935,7 +938,7 @@ self.square_font_info.execute(|image| {
 })?;
 ```
 
-![Square font credits](10_square_font_credits.png)
+![Square font credits](screenshots/09_square_font_credits.png)
 
 Thanks a bunch, Wouter!
 
@@ -961,7 +964,7 @@ tilemap.execute(|tilemap| {
 })?;
 ```
 
-![Entities!](screenshots/09_entities.png)
+![Entities!](screenshots/10_entities.png)
 
 We can see the player (`@`) a couple of (definitely friendly) goblins
 (`g`) and some purple food (`%`). Time to party!
