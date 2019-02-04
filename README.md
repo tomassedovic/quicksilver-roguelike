@@ -621,7 +621,7 @@ First, we need to create all the characters we're going to render. Put
 this in `Game::new` after our entity code:
 
 ```rust
-let game_glyphs = "#@g.";
+let game_glyphs = "#@g.%";
 ```
 
 These are the characters we're going to use. A bigger game will have
