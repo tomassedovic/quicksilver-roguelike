@@ -1,5 +1,4 @@
 use quicksilver::{
-    combinators::result,
     geom::{Rectangle, Shape, Vector},
     graphics::{
         Background::{Blended, Col, Img},
@@ -120,7 +119,7 @@ impl State for Game {
                 let tile = tiles.subimage(Rectangle::new(pos, tile_size));
                 tilemap.insert(glyph, tile);
             }
-            result(Ok(tilemap))
+            Ok(tilemap)
         }));
 
         let map = generate_map(map_size);
