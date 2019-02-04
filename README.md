@@ -899,39 +899,6 @@ Take that, 1950s terminals!
 > data memory. Our tilemap image *alone* has 9216 **bytes**.
 
 
-## Adding entities
-
-Now that our map looks the way we want it, let's add the entities. It
-looks pretty much identical to how we draw the map:
-
-```rust
-let (tilemap, entities) = (&mut self.tilemap, &self.entities);
-tilemap.execute(|tilemap| {
-    for entity in entities.iter() {
-        if let Some(image) = tilemap.get(&entity.glyph) {
-            let pos_px = offset_px + entity.pos.times(tile_size_px);
-            window.draw(
-                &Rectangle::new(pos_px, image.area().size()),
-                Blended(&image, entity.color),
-            );
-        }
-    }
-    Ok(())
-})?;
-```
-
-![Entities!](screenshots/09_entities.png)
-
-We can see the player (`@`) a couple of (definitely friendly) goblins
-(`g`) and some purple food (`%`). Time to party!
-
-You might also notice that the dots representing empty space are still
-visible. The images are just drawn on top of one another so if they
-don't cover something perfectly, it will shine through.
-
-> Spoiler alert: we will not fix that here. It's your first homework!
-
-
 ## Square credit
 
 Since we've added another font, let's show our appreciation to its
@@ -971,6 +938,39 @@ self.square_font_info.execute(|image| {
 ![Square font credits](10_square_font_credits.png)
 
 Thanks a bunch, Wouter!
+
+
+## Adding entities
+
+Now that our map looks the way we want it, let's add the entities. It
+looks pretty much identical to how we draw the map:
+
+```rust
+let (tilemap, entities) = (&mut self.tilemap, &self.entities);
+tilemap.execute(|tilemap| {
+    for entity in entities.iter() {
+        if let Some(image) = tilemap.get(&entity.glyph) {
+            let pos_px = offset_px + entity.pos.times(tile_size_px);
+            window.draw(
+                &Rectangle::new(pos_px, image.area().size()),
+                Blended(&image, entity.color),
+            );
+        }
+    }
+    Ok(())
+})?;
+```
+
+![Entities!](screenshots/09_entities.png)
+
+We can see the player (`@`) a couple of (definitely friendly) goblins
+(`g`) and some purple food (`%`). Time to party!
+
+You might also notice that the dots representing empty space are still
+visible. The images are just drawn on top of one another so if they
+don't cover something perfectly, it will shine through.
+
+> Spoiler alert: we will not fix that here. It's your first homework!
 
 
 ## Health bar
