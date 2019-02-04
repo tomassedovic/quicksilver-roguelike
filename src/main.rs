@@ -20,7 +20,7 @@ struct Entity {
     max_hp: i32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct Tile {
     pos: Vector,
     glyph: char,
