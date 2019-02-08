@@ -775,8 +775,9 @@ returns a new `Image` covering that portion and nothing else.
 
 We could either call `subimage` directly in our `draw` function, or we
 could generate a sub-image once for each glyph and then just reference
-those when drawing. We're going to do the latter and use a [`HashMap`][hashmap]
-(gasp!) to get from a `char` to the corresponding `Image`.
+those when drawing. We're going to do the latter and use
+a [`HashMap`][hashmap] to get from a `char` to the corresponding
+`Image`.
 
 [hashmap]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
 
@@ -918,7 +919,7 @@ quicksilver::graphics::Background::Blended
 
 And that should do it:
 
-![Tileset in the top-left corner](screenshots/05_corner_tileset.png)
+![Tileset in the top-left corner](screenshots/05_corner_tilemap.png)
 
 Looking good, but the map is in the top-left corner, obscured by the
 title text! Let's fix that.
@@ -958,7 +959,7 @@ visually distinct characters and even text looks decent in it (though
 proportional fonts are best for text).
 
 > "we" == Tomas Sedovic. I like mononoki. It's awesome. If you
-> disagree, pick a different one!
+> disagree, pick a different font!
 
 But it's not a square font.
 
@@ -1070,7 +1071,7 @@ self.square_font_info.execute(|image| {
 
 ![Square font credits](screenshots/09_square_font_credits.png)
 
-Thanks a bunch, Wouter!
+> Thanks a bunch, Wouter!
 
 
 ## Drawing entities
