@@ -62,8 +62,8 @@ can add it like so:
 
 ### cargo-web
 
-[cargo-web](https://github.com/koute/cargo-web) is used to create
-everything you need to ship your game on the web. Install it like so:
+[cargo-web](https://github.com/koute/cargo-web) handles everything you
+need to ship your game on the web. Install it like so:
 
     $ cargo install cargo-web
 
@@ -99,7 +99,7 @@ use [Quicksilver](https://www.ryanisaacg.com/quicksilver/) because it
 lets you target both the desktop and web really easily!
 
 Open your `Cargo.toml` in the root of your repository and add this
-below `[dependencies]`:
+under `[dependencies]`:
 
 ```toml
 # More features: "collisions", "complex_shapes", "immi_ui", "sounds", gamepads
@@ -116,8 +116,8 @@ Run the program again to build the quicksilver dependency:
 
     $ cargo run --release
 
-This might take a couple of minutes and then print out the same
-text as before.
+This might take a couple of minutes. It should print out the same
+hello world message as before.
 
 > We'll be always building the optimised version in this guide. You
 > can drop the `--release` flag but if you do, you're *not allowed* to
@@ -127,9 +127,9 @@ text as before.
 
 ## Hello, Game!
 
-First things we'll do is create a window and print some text on it.
-We'll do all our coding in the [`src/main.rs` file][main.rs] in your
-repository. It's less than 300 lines total.
+The first thing we'll do is create a window and print some text on it.
+We'll do all our coding in the [`src/main.rs` file][main.rs] in the
+game repository. It's less than 300 lines total.
 
 [main.rs]: https://github.com/tomassedovic/quicksilver-roguelike/blob/guide/src/main.rs
 
@@ -192,7 +192,7 @@ use quicksilver::{
 };
 ```
 
-Running the game now should produce an empty window filled with black:
+Running the game should now produce an empty window filled with black:
 
     $ cargo run --release
 
@@ -217,10 +217,9 @@ Let's create it:
 
     $ mkdir static
 
-The warning should disappear.
-
-What goes into assets? Sounds, images, models, maps and anything else
-your game will need to load. Including fonts.
+The warning should disappear. What goes into `static`? Sounds, images,
+models, maps and anything else your game will need to load. Including
+fonts.
 
 Let's download [mononoki](https://madmalik.github.io/mononoki/), a
 beautiful little monospace font. You can get it from the [mononoki website][mononoki]:
@@ -231,8 +230,8 @@ https://madmalik.github.io/mononoki/
 
 It is an [open source](https://github.com/madmalik/mononoki) font [distributed under the Open Font License 1.1](https://github.com/madmalik/mononoki/blob/master/LICENSE).
 
-Get the `mononoki-Regular.ttf` file and copy it into our new `static`
-directory.
+Unpack it and copy the `mononoki-Regular.ttf` file into our new
+`static` directory.
 
 
 ### Loading the font
@@ -265,15 +264,24 @@ font's credits.
 
 > Thanks, Matthias!
 
-`Font::load` returns a `Future`. It exits immediately and load the
-actual file in the background. Calling `and_then` will let us
-manipulate the value (font) when it's ready.
+[`Font::load`][font_load] returns a [`Future`][future]. It exits
+immediately and loads the actual file in the background.
+Calling [`and_then`][and_then] will let us manipulate the value (font)
+when it's ready.
+
+[font_load]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/struct.Font.html#method.load
+
+[future]: https://docs.rs/quicksilver/0.3.5/quicksilver/combinators/trait.Future.html
+
+[and_then]: https://docs.rs/quicksilver/0.3.5/quicksilver/combinators/trait.Future.html#method.and_then
 
 > Quicksilver does dynamic asset loading for us!
 
-Note that, "render" here doesn't mean "draw onto the screen".
-`font.render` takes a text and a style (font size & colour) and
-creates an image that we'll draw later.
+Note that, "render" here doesn't mean "draw onto the
+screen". [`font.render`][font_render] takes a text and a style (font
+size & colour) and creates an image we can draw later.
+
+[font_render]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/struct.Font.html#method.render
 
 Font rendering means a lot of work. It has to rasterise the glyphs,
 handle kerning, etc. Drawing an image is much faster. So we do all the
@@ -314,7 +322,7 @@ use quicksilver::{
 
 ### Drawing text
 
-The text is black, so we need to change the window's background to
+Our text is black, so we need to change the window's background to
 make it visible. Let's do that and draw the text:
 
 ```rust
@@ -345,20 +353,29 @@ fn update(&mut self, window: &mut Window) -> Result<()> {
 }
 ```
 
-`window.clear(color)` is quite straightforward, but what's the deal
-with this `execute` stuff?
+[`window.clear(color)`][window_clear] is quite straightforward, but
+what's the deal with this [`execute`][asset_execute] stuff?
+
+[window_clear]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Window.html#method.clear
+
+[asset_execute]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Asset.html#method.execute
 
 We're not storing the images directly -- we're storing them
-as [Futures][future]. That is, values that might not actually exist
-yet (because the font did not finish loading).
+as [Asset<Image>][asset]. And `Asset` wraps a `Future` that is, a
+value that might not actually exist yet (because the font did not
+finish loading).
 
-[future]: https://docs.rs/quicksilver/0.3.5/quicksilver/trait.Future.html
+[asset]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Asset.html
 
-To get to an asset, we need to call execute and pass in a closure that
-operates on that asset (an [`Image`][image] in our case). If it's
-loaded, the closure will be called, if not, nothing will happen (but
-the program will keep going).
+To get to the `Asset`'s inner value, we need to call `execute` and
+pass in a closure that operates on that asset (an [`Image`][image] in
+our case). If it's loaded, the closure will be called, if not, nothing
+will happen (but the program will keep going).
 
+> There's also a [`Asset::execute_or`] which can call a function if
+> the loading did not complete yet.
+
+[execute_or]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Asset.html#method.execute_or
 [image]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/struct.Image.html
 
 Inside the closure we call [`window.draw`][draw] which takes two
@@ -479,9 +496,9 @@ within your game in that case! Ideally, defaulting to the system's DPI value.
 ![Crisp text](screenshots/04_crisp_text.png)
 
 > We will still keep the `Blur` scaling strategy. Quicksilver's
-> coordinates are floating numbers and things like `with_center` can
-> easily result in non-integer coordinates. Again, these tend to look
-> better with Blur.
+> coordinates are floating point numbers and things like `with_center`
+> can easily result in non-integer coordinates. Again, these tend to
+> look better with Blur.
 
 
 ## Generating the game map
@@ -507,9 +524,10 @@ two-value `x` & `y` struct.
 
 [vector]: https://docs.rs/quicksilver/0.3.5/quicksilver/geom/struct.Vector.html
 
-> You might still want to write your own. `Vector` uses `f32` and if
-> you overload its meaning (e.g. using it pixel as well as map tile
-> coordinates), there's nothing stopping you from mixing them up.
+> You might still want to write your position, size, etc. types.
+> `Vector` uses `f32` and if you overload its meaning (e.g. using it
+> for pixel as well as map tile coordinates), you can end up mixing
+> them by accident.
 
 A proper roguelike would use a procedural / random generation to build
 the map. We're just going to create an empty rectangle with `#` as the
@@ -571,7 +589,7 @@ struct Entity {
 ```
 
 > Yea, food and doors can have hit points. That's not as crazy as it
-> might seem (fire can destroy both by taking its HP just like with
+> might seem (fire can destroy both by taking its HP just as with
 > living things). If you've got zillions entities however, it may be
 > inefficient. Check out the [entity-component-system pattern][ecs]
 > for an alternative.
@@ -696,8 +714,6 @@ And return it at the end of `new`.
 
 ## Building the tilemap
 
-TODO: motivation paragraph for the tilemap.
-
 It's time to put the map on screen. We want to produce a grid of
 letters that's potentially changing every frame (as characters move on
 the screen).
@@ -707,7 +723,7 @@ a [spritesheet / tileset / texture atlas][tileset]. It is a single
 image that will contain all of our graphics. Here's an example of a
 tileset:
 
-[![Tile set example by Daniel Schwen][./Tile_set.png]][ts_example]
+[![Tile set example by Daniel Schwen](./Tile_set.png)][ts_example]
 
 [ts_example]: https://en.wikipedia.org/wiki/File:Tile_set.png
 
