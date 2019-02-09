@@ -10,7 +10,6 @@ build it for Windows, macOS, Linux and the Web
 If you want to dive right in, just clone this repo and run it. Or read
 on for a detailed guide.
 
-
 ## Motivation
 
 Rust is a pretty good language for writing roguelikes: it is fast,
@@ -74,7 +73,7 @@ need to ship your game on the web. Install it like so:
 
 Create a new project like so:
 
-    $ cargo new --vcs git quicksilver-roguelike
+    $ cargo new --vcs git roguelike
 
 > This will initialise a new git repository as well! Remove `--vcs
 > git` if you don't want that.
@@ -82,12 +81,16 @@ Create a new project like so:
 If you've got everything set up properly, you should be able to run
 the default program:
 
-    $ cd quicksilver-roguelike
+    $ cd roguelike
     $ cargo run --release
 
 It will print:
 
 ```
+$ cargo run --release
+   Compiling roguelike v0.1.0 (/home/thomas/tmp/roguelike)
+    Finished release [optimized] target(s) in 0.92s
+     Running `target/release/roguelike`
 Hello, world!
 ```
 
@@ -98,10 +101,11 @@ Rust has several gamedev engines and frameworks. We are going to
 use [Quicksilver](https://www.ryanisaacg.com/quicksilver/) because it
 lets you target both the desktop and web really easily!
 
-Open your `Cargo.toml` in the root of your repository and add this
-under `[dependencies]`:
+Open your `Cargo.toml` in the root of your repository and add this at
+the end:
 
 ```toml
+[dependencies]
 # More features: "collisions", "complex_shapes", "immi_ui", "sounds", gamepads
 quicksilver = { version = "0.3.6", default-features = false, features = ["fonts", "saving"]}
 ```
@@ -124,6 +128,7 @@ hello world message as before.
 > make any speed measurements. Rust's debug builds are slower than you
 > think. They're slower than unoptimised C++. They're slower than
 > Ruby.
+
 
 ## Hello, Game!
 
@@ -163,7 +168,8 @@ impl State for Game {
 
 Our game code will go into the three methods above.
 
-To run the game, replace the `main` function with:
+To run the game add the above to `main.rs` and replace the `main`
+function with:
 
 ```rust
 fn main() {
@@ -174,7 +180,7 @@ fn main() {
 }
 ```
 
-The [`Settings` struct][settings] lets you control various engine
+The [`Settings` struct][settings] lets us control various engine
 settings that we'll get to later. The `800` and `600` numbers
 represent the **logical** size of your window. Depending on your DPI
 settings, it might be bigger than that.
@@ -182,7 +188,7 @@ settings, it might be bigger than that.
 [settings]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Settings.html
 
 And finally, we need to bring all the items we use into scope. Put
-this on top of your file:
+this at the top of your file:
 
 ```rust
 use quicksilver::{
@@ -217,18 +223,30 @@ Let's create it:
 
     $ mkdir static
 
-The warning should disappear. What goes into `static`? Sounds, images,
-models, maps and anything else your game will need to load. Including
-fonts.
+Our repo should now look like this:
 
-Let's download [mononoki](https://madmalik.github.io/mononoki/), a
-beautiful little monospace font. You can get it from the [mononoki website][mononoki]:
+```
+├── Cargo.lock
+├── Cargo.toml
+├── src
+│   └── main.rs
+├── static
+└── target
+    └── release
+```
 
-https://madmalik.github.io/mononoki/
+What goes into `static`? Sounds, images, models, maps and anything
+else your game will need to load. Including fonts.
+
+Let's use mononoki, a beautiful little monospace font. Go to
+the [mononoki website][mononoki] and download it.
 
 [mononoki]: https://madmalik.github.io/mononoki/
 
-It is an [open source](https://github.com/madmalik/mononoki) font [distributed under the Open Font License 1.1](https://github.com/madmalik/mononoki/blob/master/LICENSE).
+It is an [open source](https://github.com/madmalik/mononoki) font
+created by Matthias
+Tellen
+[distributed under the Open Font License 1.1](https://github.com/madmalik/mononoki/blob/master/LICENSE).
 
 Unpack it and copy the `mononoki-Regular.ttf` file into our new
 `static` directory.
@@ -283,9 +301,10 @@ size & colour) and creates an image we can draw later.
 
 [font_render]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/struct.Font.html#method.render
 
-Font rendering means a lot of work. It has to rasterise the glyphs,
-handle kerning, etc. Drawing an image is much faster. So we do all the
-hard work once in `new` and then just draw a static image later.
+Font rendering takes a lot computational of work. It has to rasterise
+the glyphs, handle kerning, etc. Drawing an image is much faster. So
+we do all the hard work once, store the results and then just draw a
+static image later.
 
 To make both of our images (title and the credits) available to the
 `draw` method, we'll store them in the `Game` struct:
@@ -322,11 +341,15 @@ use quicksilver::{
 
 ### Drawing text
 
-Our text is black, so we need to change the window's background to
-make it visible. Let's do that and draw the text:
+We wrote a bunch of code, but if we run the game, nothing changed. We
+need to draw the text on screen which happens in the `draw` function.
+
+Since we rendered our text black, we're going to set the window's
+background to white to make it visible. Let's do that and draw the
+text:
 
 ```rust
-fn update(&mut self, window: &mut Window) -> Result<()> {
+fn draw(&mut self, window: &mut Window) -> Result<()> {
     window.clear(Color::WHITE)?;
 
     self.title.execute(|image| {
@@ -361,7 +384,7 @@ what's the deal with this [`execute`][asset_execute] stuff?
 [asset_execute]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Asset.html#method.execute
 
 We're not storing the images directly -- we're storing them
-as [Asset<Image>][asset]. And `Asset` wraps a `Future` that is, a
+in an [Asset<Image>][asset]. An `Asset` wraps a `Future` that is, a
 value that might not actually exist yet (because the font did not
 finish loading).
 
@@ -433,13 +456,14 @@ Let's run it:
 
 *ugh*
 
-Depending on your system's DPI settings, the text may look okay or
-weirdly pixelated like above.
+Depending on your system's DPI settings, the text may either look fine
+or be the pixelated mess we see in the picture above.
 
 ### Font rendering artefacts
 
 If you see the artefacts (bear in mind that even if you don't, your
-users might), they're caused by a combination two things:
+users might so we should handle this), they're caused by a combination
+of two things:
 
 1. Window scaling due to DPI
 2. Quicksilver's default image scaling strategy (pixelate)
@@ -448,8 +472,8 @@ You can read more about DPI here:
 
 https://docs.rs/glutin/0.19.0/glutin/dpi/index.html
 
-If your system is configured for a DPI that's say `1.3`, the window
-size (with all its contents) will be scaled up to it. This is a very
+If your system is configured for a DPI that's `1.3`, the window size
+(with all its contents) will be scaled up to it. This is a very
 important accessibility feature and not handling it properly can make
 your program too small for people with bad eyesight or a "Retina
 display".
@@ -479,7 +503,7 @@ And now it looks blurry instead:
 
 ![Blurry text](screenshots/03_blurry_text.png)
 
-But it's easier on the eyes.
+Not perfect, but it's easier on the eyes.
 
 If you want to have a full control over your the window and text size,
 add this line at the beginning of your `main` function:
@@ -497,8 +521,8 @@ within your game in that case! Ideally, defaulting to the system's DPI value.
 
 > We will still keep the `Blur` scaling strategy. Quicksilver's
 > coordinates are floating point numbers and things like `with_center`
-> can easily result in non-integer coordinates. Again, these tend to
-> look better with Blur.
+> can easily result in non-integer values. Again, these tend to look
+> better with `Blur`.
 
 
 ## Generating the game map
@@ -520,14 +544,14 @@ struct Tile {
 ```
 
 The `pos` is a [`quicksilver::geom::Vector`][vector]. Your typical
-two-value `x` & `y` struct.
+two-dimensional struct with `x` & `y` fields.
 
 [vector]: https://docs.rs/quicksilver/0.3.5/quicksilver/geom/struct.Vector.html
 
-> You might still want to write your position, size, etc. types.
-> `Vector` uses `f32` and if you overload its meaning (e.g. using it
-> for pixel as well as map tile coordinates), you can end up mixing
-> them by accident.
+> You might consider defining your own types for position, size, etc.
+> `Vector` uses `f32` (you may prefer integers) and if you overload
+> its meaning (e.g. using it for pixel as well as map tile
+> coordinates), you can end up mixing them by accident.
 
 A proper roguelike would use a procedural / random generation to build
 the map. We're just going to create an empty rectangle with `#` as the
@@ -563,7 +587,8 @@ reallocating.
 [vec]: https://doc.rust-lang.org/std/vec/struct.Vec.html
 
 > If you know the size of a `Vec` in advance,
-> call [with_capacity][with_capacity] instead of `new`. It's faster.
+> call [with_capacity][with_capacity] instead of `new`. Pushing
+> elements to it will be faster because it won't have to reallocate.
 
 [with_capacity]: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.with_capacity
 
@@ -588,11 +613,12 @@ struct Entity {
 }
 ```
 
-> Yea, food and doors can have hit points. That's not as crazy as it
-> might seem (fire can destroy both by taking its HP just as with
-> living things). If you've got zillions entities however, it may be
-> inefficient. Check out the [entity-component-system pattern][ecs]
-> for an alternative.
+> Yep this meens food and doors would have hit points. That's not as
+> weird as it might seem (think of fire destroying everything by
+> lowering HP -- that can apply to any entity not just living things).
+> If you've got zillions entities however, storing every field for
+> every entity may be inefficient. Check out
+> the [entity-component-system pattern][ecs] for an alternative.
 
 [ecs]: https://en.wikipedia.org/wiki/Entity%E2%80%93component%E2%80%93system
 
@@ -635,7 +661,7 @@ fn generate_entities() -> Vec<Entity> {
 
 Two Goblin NPCs and some food.
 
-Let's hook them both tiles and entities to our `Game` struct:
+Let's add the tiles and entities to our `Game` struct:
 
 ```rust
 struct Game {
@@ -647,7 +673,8 @@ struct Game {
 }
 ```
 
-We're adding the map size as well -- that will come in handy later.
+We're adding the size of the map as well -- that will come in handy
+later.
 
 Next, call both functions in `Game::new`:
 
@@ -677,7 +704,7 @@ place (the `entities` Vec) is quite useful, but the player character
 is always a little special. We often need to access it directly to
 show its health bar, update it's position on key presses, etc.
 
-So let's also save the player's index. That way we can look them up
+So let's also store the player's index. That way we can look them up
 any time we want.
 
 Put this in `Game::new` right after the `generate_entities()` call:
@@ -709,19 +736,26 @@ struct Game {
 }
 ```
 
-And return it at the end of `new`.
+And return it at the end of `new`:
+
+```rust
+Ok(Self {
+    ...
+    player_id,
+})
+```
 
 
 ## Building the tilemap
 
-It's time to put the map on screen. We want to produce a grid of
-letters that's potentially changing every frame (as characters move on
-the screen).
+It's time to draw the map on the screen. We want to produce a grid of
+letters that's potentially changing every frame (as the characters
+move on the screen).
 
 To do this we're going to build
-a [spritesheet / tileset / texture atlas][tileset]. It is a single
-image that will contain all of our graphics. Here's an example of a
-tileset:
+a [spritesheet (also known as tileset or texture atlas)][tileset]. It
+is a single image that will contain all of our graphics. The graphical
+ones look something like this:
 
 [![Tile set example by Daniel Schwen](./Tile_set.png)][ts_example]
 
@@ -732,8 +766,8 @@ tileset:
 *Author: Daniel Schwen, license: CC SA 4.0*
 
 Ours is going to be built of letters not pictures, but the principle
-is the same and if you want, you can replace it with actual graphics
-later on.
+is the same. And if you want, you can replace it with actual graphics
+later.
 
 > This is one of the reasons we'll build an atlas rather than calling
 > `Font::render` for each character or line on the map. We'd have to
@@ -744,8 +778,11 @@ Games usually build these atlases during development and then only
 ship the composite image. You only need to do it once, after all.
 
 We're going to be a bit lazy and wasteful here, but you can (and
-probably should) do that in your [build script][build_script] or
-similar.
+probably should) do that in your [build script][build_script] instead.
+
+> One reason we do it in `main.rs` is that all our code is in one
+> place. That makes this tutorial easier to follow. Not recommended
+> for a bigger project.
 
 [build_script]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 
@@ -760,8 +797,8 @@ These are the characters we're going to use. A bigger game will have
 more of these and you may want to generate them from your map and
 entities instead of hardcoding them like we do.
 
-And then we can let Quicksilver do its thing and render it into an
-`Image` just like we're used to.
+Then we let Quicksilver do its thing and render it into an `Image`
+just like before.
 
 Drawing a part of an image is done via
 the [`subimage` method][subimage]. You give it a `Rectangle` and
@@ -782,12 +819,12 @@ a [`HashMap`][hashmap] to get from a `char` to the corresponding
 [hashmap]: https://doc.rust-lang.org/std/collections/struct.HashMap.html
 
 > There's a ton of other ways to do this. For example: create an image
-> of all ASCII characters and then have a `Vec<Image>` for each
-> subimage. Each image's index would be its ASCII value. This would
-> probably be faster, but it would waste a little more memory and
-> you'll need to check that your `char` (a 32-bit Unicode value) can
-> be converted to the right range. Also, what if you want to add some
-> good-looking Chinese characters? You should measure and decide on
+> of all ASCII characters and then have all the subimages in a
+> `Vec<Image>`. Each image's index would be its ASCII value. This
+> would probably be faster, but it could waste a little more memory
+> and you'll need to check that your `char` (a 32-bit Unicode value)
+> can be converted to the right range. Also, what if you want to add
+> some good-looking Chinese glyphs? You should measure and decide on
 > trade-offs that suit your game.
 
 We need to record the size of each tile (so we can pick it out of the
@@ -806,7 +843,7 @@ let tileset = Asset::new(Font::load(font_mononoki).and_then(move |text| {
         .render(game_glyphs, &FontStyle::new(tile_size_px.y, Color::WHITE))
         .expect("Could not render the font tileset.");
     let mut tileset = HashMap::new();
-    for (index, glyph) in tileset_source.chars().enumerate() {
+    for (index, glyph) in game_glyphs.chars().enumerate() {
         let pos = (index as i32 * tile_size_px.x as i32, 0);
         let tile = tiles.subimage(Rectangle::new(pos, tile_size_px));
         tileset.insert(glyph, tile);
@@ -837,12 +874,20 @@ struct Game {
     map: Vec<Tile>,
     entities: Vec<Entity>,
     player_id: usize,
-    tileset: tileset: Asset<HashMap<char, Image>>,
+    tileset: Asset<HashMap<char, Image>>,
     tile_size_px: Vector,
 }
 ```
 
-and return them from `new`.
+and return them from `new`:
+
+```rust
+Ok(Self {
+    ...
+    tileset,
+    tile_size_px,
+})
+```
 
 We need to add `quicksilver::geom::Rectangle` and
 `std::collections::HashMap` to our imports:
@@ -861,7 +906,7 @@ use std::collections::HashMap;
 
 ## Drawing the map
 
-We've got the map and the tiles, let's put them to use!
+We've got the map and the tiles, so we can finally put them to use!
 
 Drawing the map is easy: we calculate the position of each tile, grab
 the corresponding image and draw it on the window. Since `tileset` is
@@ -869,6 +914,8 @@ an `Asset`, this must happen inside an `execute` block:
 
 ```rust
 fn draw(&mut self, window: &mut Window) -> Result<()> {
+    // ...
+
     let tile_size_px = self.tile_size_px;
 
     let (tileset, map) = (&mut self.tileset, &self.map);
@@ -947,16 +994,17 @@ window.draw(
 Better.
 
 
-## Adding square font
+## Adding a square font
 
 This starts to look like a roguelike, but we *can* improve upon it.
 Why are the tiles not square? Personal preference aside (whatever
 floats your boat), in our case it's just an artefact of the font we're
 using.
 
-We've picked mononoki, because **we** like it! It looks great, has
-visually distinct characters and even text looks decent in it (though
-proportional fonts are best for text).
+We've picked mononoki, because we like it! It looks great, has
+visually distinct characters and even normal text looks decent in it
+(though when it comes to reading a block of actual text, nothing beats
+proportional fonts).
 
 > "we" == Tomas Sedovic. I like mononoki. It's awesome. If you
 > disagree, pick a different font!
@@ -964,10 +1012,9 @@ proportional fonts are best for text).
 But it's not a square font.
 
 If we were writing a terminal game or using a library that emulates
-one (such as libtcod), that would be that. Everything would have to be
-the same font and you'd have to choose between a square font (good for
-the map, bad for text) or a non-square one (good for text, bad for the
-map).
+one (such as libtcod), everything would be the same font and you'd
+have to choose between a square font (good for the map, bad for text)
+or a non-square one (good for text, bad for the map).
 
 Neither is a great option, but all old-school roguelikes were that
 way.
@@ -978,9 +1025,11 @@ Let's just pick a second font with square proportions and use that for
 the map (and keep doing text with mononoki).
 
 For a font with square proportions, you clearly can't do better than
-Square:
+[Square][square]:
 
 http://strlen.com/square/?s[]=font
+
+[square]: http://strlen.com/square/?s[]=font
 
 It's licensed under CC BY 3.0. Download it and put `square.ttf` in the
 `static` folder.
@@ -1028,10 +1077,11 @@ let tile_size_px = Vector::new(24, 24);
 
 Take that, 1950s terminals!
 
-> Z3, one of the first computers with a textual terminal had *1408
+> [Z3][z3], one of the first computers with a textual terminal had *1408
 > bits* of data memory. Our tileset image *alone* has **11,520
 > bytes**.
 
+[z3]: https://en.wikipedia.org/wiki/Z3_(computer)
 
 ## Square credit
 
@@ -1044,7 +1094,7 @@ In `Game::new`:
 let square_font_info = Asset::new(Font::load(font_mononoki).and_then(move |font| {
     font.render(
         "Square font by Wouter Van Oortmerssen, terms: CC BY 3.0",
-        &text_style,
+        &FontStyle::new(20.0, Color::BLACK),
     )
 }));
 ```
@@ -1218,7 +1268,11 @@ One last thing.
 Running the game with `cargo run` builds the desktop version. But we
 promised that Quicksilver can do a web version too.
 
-Run `cargo web start --auto-reload` and go to
+Run:
+
+    $ cargo web start --auto-reload
+
+and go to:
 
 http://localhost:8000
 
@@ -1280,12 +1334,3 @@ https://doc.rust-lang.org/std/collections/index.html
 The 7 Day Roguelike Challenge (7DRL):
 
 https://7drl.com/
-
-
-
-## TODO:
-
-* follow the guide to make sure all the code is here
-* bring the changes here back to the quicksilver-roguelike repo
-* deploy the web version to github pages
-* publish it on my blog
