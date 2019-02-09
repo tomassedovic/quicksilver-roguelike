@@ -1311,7 +1311,7 @@ $ git commit -m "Add wasm build"
 $ git push -u origin gh-pages
 ```
 
-And now go to: https://sam.github.io/roguelike/
+And now go to: `https://sam.github.io/roguelike/`
 
 (of course swapping your user and repo name for the right values)
 
