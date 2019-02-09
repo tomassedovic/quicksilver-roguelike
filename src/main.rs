@@ -99,8 +99,6 @@ impl State for Game {
         // The Mononoki font: https://madmalik.github.io/mononoki/
         // License: SIL Open Font License 1.1
         let font_mononoki = "mononoki-Regular.ttf";
-        // The Square font: http://strlen.com/square/?s[]=font
-        // License: CC BY 3.0 https://creativecommons.org/licenses/by/3.0/deed.en_US
 
         let title = Asset::new(Font::load(font_mononoki).and_then(|font| {
             font.render("Quicksilver Roguelike", &FontStyle::new(72.0, Color::BLACK))
@@ -132,6 +130,8 @@ impl State for Game {
             max_hp: 5,
         });
 
+        // The Square font: http://strlen.com/square/?s[]=font
+        // License: CC BY 3.0 https://creativecommons.org/licenses/by/3.0/deed.en_US
         let font_square = "square.ttf";
         let game_glyphs = "#@g.%";
         let tile_size_px = Vector::new(24, 24);
@@ -188,6 +188,7 @@ impl State for Game {
     fn draw(&mut self, window: &mut Window) -> Result<()> {
         window.clear(Color::WHITE)?;
 
+        // Draw the game title
         self.title.execute(|image| {
             window.draw(
                 &image
@@ -198,6 +199,7 @@ impl State for Game {
             Ok(())
         })?;
 
+        // Draw the mononoki font credits
         self.mononoki_font_info.execute(|image| {
             window.draw(
                 &image
@@ -208,6 +210,7 @@ impl State for Game {
             Ok(())
         })?;
 
+        // Draw the Square font credits
         self.square_font_info.execute(|image| {
             window.draw(
                 &image
@@ -221,6 +224,7 @@ impl State for Game {
         let tile_size_px = self.tile_size_px;
         let offset_px = Vector::new(50, 120);
 
+        // Draw the map
         let (tileset, map) = (&mut self.tileset, &self.map);
         tileset.execute(|tileset| {
             for tile in map.iter() {
@@ -235,6 +239,7 @@ impl State for Game {
             Ok(())
         })?;
 
+        // Draw entities
         let (tileset, entities) = (&mut self.tileset, &self.entities);
         tileset.execute(|tileset| {
             for entity in entities.iter() {
@@ -281,10 +286,7 @@ fn main() {
     std::env::set_var("WINIT_HIDPI_FACTOR", "1.0");
 
     let settings = Settings {
-        // Don't scale the graphics when the window is resized
-        resize: quicksilver::graphics::ResizeStrategy::Maintain,
-
-        // If the graphics do need to be scaled (e.g. with
+        // If the graphics do need to be scaled (e.g. using
         // `with_center`), blur them. This looks better with fonts.
         scale: quicksilver::graphics::ImageScaleStrategy::Blur,
         ..Default::default()
