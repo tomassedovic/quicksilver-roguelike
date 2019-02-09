@@ -31,6 +31,10 @@ It will look like this:
 
 ![Final game in the web browser](screenshots/final.png)
 
+You can try the web build here:
+
+https://tomassedovic.github.io/quicksilver-roguelike/
+
 
 ## Setup
 
@@ -1290,6 +1294,31 @@ $ cargo web deploy
 Everything will be added to your `target/deploy` directory. Upload it
 on the web, give people the link and they can play it right their in
 the browser -- no need to install anything!
+
+### GitHub Pages
+
+You can publish your game to GitHub Pages like so. Assuming your
+GitHub username is `sam` and your repo is called `roguelike`, you can
+do this:
+
+```
+$ cd ~/code/roguelike  # or whetever your code is
+$ git checkout -b gh-pages
+$ cargo web deploy
+$ cp -r target/deploy/* .
+$ git add .
+$ git commit -m "Add wasm build"
+$ git push -u origin gh-pages
+```
+
+And now go to: https://sam.github.io/roguelike/
+
+(of course swapping your user and repo name for the right values)
+
+My repo is at `quicksilver-roguelike` and I'm @tomassedovic on GitHub,
+so you can check out my build here:
+
+https://tomassedovic.github.io/quicksilver-roguelike/
 
 
 ## Make your own game
