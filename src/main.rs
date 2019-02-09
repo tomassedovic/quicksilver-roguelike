@@ -12,15 +12,6 @@ use quicksilver::{
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq)]
-struct Entity {
-    pos: Vector,
-    glyph: char,
-    color: Color,
-    hp: i32,
-    max_hp: i32,
-}
-
-#[derive(Clone, Debug, PartialEq)]
 struct Tile {
     pos: Vector,
     glyph: char,
@@ -48,6 +39,15 @@ fn generate_map(size: Vector) -> Vec<Tile> {
     map
 }
 
+#[derive(Clone, Debug, PartialEq)]
+struct Entity {
+    pos: Vector,
+    glyph: char,
+    color: Color,
+    hp: i32,
+    max_hp: i32,
+}
+
 fn generate_entities() -> Vec<Entity> {
     vec![
         Entity {
@@ -64,6 +64,20 @@ fn generate_entities() -> Vec<Entity> {
             hp: 1,
             max_hp: 1,
         },
+        Entity {
+            pos: Vector::new(7, 5),
+            glyph: '%',
+            color: Color::PURPLE,
+            hp: 0,
+            max_hp: 0,
+        },
+        Entity {
+            pos: Vector::new(4, 8),
+            glyph: '%',
+            color: Color::PURPLE,
+            hp: 0,
+            max_hp: 0,
+        },
     ]
 }
 
@@ -71,57 +85,42 @@ struct Game {
     title: Asset<Image>,
     mononoki_font_info: Asset<Image>,
     square_font_info: Asset<Image>,
-    tilemap: Asset<HashMap<char, Image>>,
     map_size: Vector,
-    tile_size: Vector,
     map: Vec<Tile>,
     entities: Vec<Entity>,
     player_id: usize,
+    tileset: Asset<HashMap<char, Image>>,
+    tile_size_px: Vector,
 }
 
 impl State for Game {
+    /// Load the assets and initialise the game
     fn new() -> Result<Self> {
         // The Mononoki font: https://madmalik.github.io/mononoki/
         // License: SIL Open Font License 1.1
         let font_mononoki = "mononoki-Regular.ttf";
         // The Square font: http://strlen.com/square/?s[]=font
         // License: CC BY 3.0 https://creativecommons.org/licenses/by/3.0/deed.en_US
-        let font_square = "square.ttf";
 
         let title = Asset::new(Font::load(font_mononoki).and_then(|font| {
             font.render("Quicksilver Roguelike", &FontStyle::new(72.0, Color::BLACK))
         }));
 
-        let text_style = FontStyle::new(20.0, Color::BLACK);
-        let mononoki_font_info = Asset::new(Font::load(font_mononoki).and_then(move |font| {
+        let mononoki_font_info = Asset::new(Font::load(font_mononoki).and_then(|font| {
             font.render(
                 "Mononoki font by Matthias Tellen, terms: SIL Open Font License 1.1",
-                &text_style,
+                &FontStyle::new(20.0, Color::BLACK),
             )
         }));
+
         let square_font_info = Asset::new(Font::load(font_mononoki).and_then(move |font| {
             font.render(
                 "Square font by Wouter Van Oortmerssen, terms: CC BY 3.0",
-                &text_style,
+                &FontStyle::new(20.0, Color::BLACK),
             )
         }));
 
-        let tilemap_source = "#@g.";
         let map_size = Vector::new(20, 15);
-        let tile_size = Vector::new(24, 24);
-        let tilemap = Asset::new(Font::load(font_square).and_then(move |text| {
-            let tiles = text
-                .render(tilemap_source, &FontStyle::new(tile_size.y, Color::WHITE))
-                .expect("Could not render the font tilemap.");
-            let mut tilemap = HashMap::new();
-            for (index, glyph) in tilemap_source.chars().enumerate() {
-                let pos = (index as i32 * tile_size.x as i32, 0);
-                let tile = tiles.subimage(Rectangle::new(pos, tile_size));
-                tilemap.insert(glyph, tile);
-            }
-            Ok(tilemap)
-        }));
-
         let map = generate_map(map_size);
         let mut entities = generate_entities();
         let player_id = entities.len();
@@ -133,19 +132,36 @@ impl State for Game {
             max_hp: 5,
         });
 
+        let font_square = "square.ttf";
+        let game_glyphs = "#@g.%";
+        let tile_size_px = Vector::new(24, 24);
+        let tileset = Asset::new(Font::load(font_square).and_then(move |text| {
+            let tiles = text
+                .render(game_glyphs, &FontStyle::new(tile_size_px.y, Color::WHITE))
+                .expect("Could not render the font tileset.");
+            let mut tileset = HashMap::new();
+            for (index, glyph) in game_glyphs.chars().enumerate() {
+                let pos = (index as i32 * tile_size_px.x as i32, 0);
+                let tile = tiles.subimage(Rectangle::new(pos, tile_size_px));
+                tileset.insert(glyph, tile);
+            }
+            Ok(tileset)
+        }));
+
         Ok(Self {
             title,
             mononoki_font_info,
             square_font_info,
-            tilemap,
             map_size,
-            tile_size,
             map,
             entities,
             player_id,
+            tileset,
+            tile_size_px,
         })
     }
 
+    /// Process keyboard and mouse, update the game state
     fn update(&mut self, window: &mut Window) -> Result<()> {
         use quicksilver::input::ButtonState::*;
 
@@ -168,6 +184,7 @@ impl State for Game {
         Ok(())
     }
 
+    /// Draw stuff on the screen
     fn draw(&mut self, window: &mut Window) -> Result<()> {
         window.clear(Color::WHITE)?;
 
@@ -201,19 +218,16 @@ impl State for Game {
             Ok(())
         })?;
 
-        let offset_px = Vector::new(50, 150);
-        let map_size = self.map_size;
-        let tile_size_px = self.tile_size;
+        let tile_size_px = self.tile_size_px;
+        let offset_px = Vector::new(50, 120);
 
-        // NOTE: Need to do partial borrows here to prevent borrowing
-        // the whole self as mutable.
-        let (tilemap, map) = (&mut self.tilemap, &self.map);
-        tilemap.execute(|tilemap| {
+        let (tileset, map) = (&mut self.tileset, &self.map);
+        tileset.execute(|tileset| {
             for tile in map.iter() {
-                if let Some(image) = tilemap.get(&tile.glyph) {
-                    let pos_px = offset_px + tile.pos.times(tile_size_px);
+                if let Some(image) = tileset.get(&tile.glyph) {
+                    let pos_px = tile.pos.times(tile_size_px);
                     window.draw(
-                        &Rectangle::new(pos_px, image.area().size()),
+                        &Rectangle::new(offset_px + pos_px, image.area().size()),
                         Blended(&image, tile.color),
                     );
                 }
@@ -221,10 +235,10 @@ impl State for Game {
             Ok(())
         })?;
 
-        let (tilemap, entities) = (&mut self.tilemap, &self.entities);
-        tilemap.execute(|tilemap| {
+        let (tileset, entities) = (&mut self.tileset, &self.entities);
+        tileset.execute(|tileset| {
             for entity in entities.iter() {
-                if let Some(image) = tilemap.get(&entity.glyph) {
+                if let Some(image) = tileset.get(&entity.glyph) {
                     let pos_px = offset_px + entity.pos.times(tile_size_px);
                     window.draw(
                         &Rectangle::new(pos_px, image.area().size()),
@@ -235,18 +249,20 @@ impl State for Game {
             Ok(())
         })?;
 
-        // Draw the health bar
         let player = &self.entities[self.player_id];
         let full_health_width_px = 100.0;
         let current_health_width_px =
             (player.hp as f32 / player.max_hp as f32) * full_health_width_px;
-        let map_size_px = map_size.times(tile_size_px);
+
+        let map_size_px = self.map_size.times(tile_size_px);
         let health_bar_pos_px = offset_px + Vector::new(map_size_px.x, 0.0);
+
         // Full health
         window.draw(
             &Rectangle::new(health_bar_pos_px, (full_health_width_px, tile_size_px.y)),
             Col(Color::RED.with_alpha(0.5)),
         );
+
         // Current health
         window.draw(
             &Rectangle::new(health_bar_pos_px, (current_health_width_px, tile_size_px.y)),
