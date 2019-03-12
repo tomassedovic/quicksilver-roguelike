@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 # More features: "collisions", "complex_shapes", "immi_ui", "sounds", "gamepads"
 quicksilver = { version = "0.3.8", default-features = false, features = ["fonts", "saving"]}
+specs = "0.14.3"
