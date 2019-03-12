@@ -81,11 +81,16 @@ fn generate_entities() -> Vec<Entity> {
     ]
 }
 
+struct GameText {
+    font: Font,
+    title: Image,
+    mononoki_info: Image,
+    square_info: Image,
+    inventory: Image,
+}
+
 struct Game {
-    title: Asset<Image>,
-    mononoki_font_info: Asset<Image>,
-    square_font_info: Asset<Image>,
-    inventory: Asset<Image>,
+    text: Asset<GameText>,
     map_size: Vector,
     map: Vec<Tile>,
     entities: Vec<Entity>,
@@ -101,29 +106,32 @@ impl State for Game {
         // License: SIL Open Font License 1.1
         let font_mononoki = "mononoki-Regular.ttf";
 
-        let title = Asset::new(Font::load(font_mononoki).and_then(|font| {
-            font.render("Quicksilver Roguelike", &FontStyle::new(72.0, Color::BLACK))
-        }));
+        let font_mononoki = Font::load(font_mononoki);
 
-        let mononoki_font_info = Asset::new(Font::load(font_mononoki).and_then(|font| {
-            font.render(
+        let text = Asset::new(font_mononoki.and_then(|font| {
+            let title =
+                font.render("Quicksilver Roguelike", &FontStyle::new(72.0, Color::BLACK))?;
+            let mononoki_info = font.render(
                 "Mononoki font by Matthias Tellen, terms: SIL Open Font License 1.1",
                 &FontStyle::new(20.0, Color::BLACK),
-            )
-        }));
-
-        let square_font_info = Asset::new(Font::load(font_mononoki).and_then(move |font| {
-            font.render(
+            )?;
+            let square_info = font.render(
                 "Square font by Wouter Van Oortmerssen, terms: CC BY 3.0",
                 &FontStyle::new(20.0, Color::BLACK),
-            )
-        }));
+            )?;
 
-        let inventory = Asset::new(Font::load(font_mononoki).and_then(move |font| {
-            font.render(
+            let inventory = font.render(
                 "Inventory:\n[A] Sword\n[B] Shield\n[C] Darts",
                 &FontStyle::new(20.0, Color::BLACK),
-            )
+            )?;
+
+            Ok(GameText {
+                font,
+                title,
+                mononoki_info,
+                square_info,
+                inventory,
+            })
         }));
 
         let map_size = Vector::new(20, 15);
@@ -157,10 +165,7 @@ impl State for Game {
         }));
 
         Ok(Self {
-            title,
-            mononoki_font_info,
-            square_font_info,
-            inventory,
+            text,
             map_size,
             map,
             entities,
@@ -190,6 +195,18 @@ impl State for Game {
         if window.keyboard()[Key::Escape].is_down() {
             window.close();
         }
+
+        if window.keyboard()[Key::X].is_down() {
+            self.text.execute(|text| {
+                let inventory = text.font.render(
+                    "Inventory:\n[A] Dagger\n[B] Buckler",
+                    &FontStyle::new(20.0, Color::BLACK),
+                );
+                text.inventory = inventory?;
+                Ok(())
+            })?;
+        }
+
         Ok(())
     }
 
@@ -198,34 +215,37 @@ impl State for Game {
         window.clear(Color::WHITE)?;
 
         // Draw the game title
-        self.title.execute(|image| {
+        self.text.execute(|text| {
             window.draw(
-                &image
+                &text
+                    .title
                     .area()
                     .with_center((window.screen_size().x as i32 / 2, 40)),
-                Img(&image),
+                Img(&text.title),
             );
             Ok(())
         })?;
 
         // Draw the mononoki font credits
-        self.mononoki_font_info.execute(|image| {
+        self.text.execute(|text| {
             window.draw(
-                &image
+                &text
+                    .mononoki_info
                     .area()
                     .translate((2, window.screen_size().y as i32 - 60)),
-                Img(&image),
+                Img(&text.mononoki_info),
             );
             Ok(())
         })?;
 
         // Draw the Square font credits
-        self.square_font_info.execute(|image| {
+        self.text.execute(|text| {
             window.draw(
-                &image
+                &text
+                    .square_info
                     .area()
                     .translate((2, window.screen_size().y as i32 - 30)),
-                Img(&image),
+                Img(&text.square_info),
             );
             Ok(())
         })?;
@@ -283,12 +303,13 @@ impl State for Game {
             Col(Color::RED),
         );
 
-        self.inventory.execute(|image| {
+        self.text.execute(|text| {
             window.draw(
-                &image
+                &text
+                    .inventory
                     .area()
                     .translate(health_bar_pos_px + Vector::new(0, tile_size_px.y)),
-                Img(&image),
+                Img(&text.inventory),
             );
             Ok(())
         })?;
@@ -303,6 +324,7 @@ fn main() {
     // scales the contents.
     // https://docs.rs/glutin/0.19.0/glutin/dpi/index.html
     std::env::set_var("WINIT_HIDPI_FACTOR", "1.0");
+    std::env::set_var("WINIT_UNIX_BACKEND", "x11");
 
     let settings = Settings {
         // If the graphics do need to be scaled (e.g. using
