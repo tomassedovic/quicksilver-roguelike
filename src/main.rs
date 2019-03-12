@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use specs::prelude::*;
+
 use quicksilver::{
     geom::{Rectangle, Shape, Vector},
     graphics::{
@@ -8,8 +12,6 @@ use quicksilver::{
     lifecycle::{run, Asset, Settings, State, Window},
     Future, Result,
 };
-
-use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq)]
 struct Tile {
@@ -39,46 +41,80 @@ fn generate_map(size: Vector) -> Vec<Tile> {
     map
 }
 
-#[derive(Clone, Debug, PartialEq)]
-struct Entity {
-    pos: Vector,
-    glyph: char,
-    color: Color,
-    hp: i32,
-    max_hp: i32,
+#[derive(Debug)]
+struct Pos(Vector);
+
+impl Component for Pos {
+    type Storage = VecStorage<Self>;
 }
 
-fn generate_entities() -> Vec<Entity> {
-    vec![
-        Entity {
-            pos: Vector::new(9, 6),
+#[derive(Debug)]
+struct Health {
+    max: i32,
+    current: i32,
+}
+
+impl Health {
+    fn new(value: i32) -> Self {
+        Self {
+            max: value,
+            current: value,
+        }
+    }
+}
+
+impl Component for Health {
+    type Storage = HashMapStorage<Self>;
+}
+
+#[derive(Debug)]
+struct Render {
+    glyph: char,
+    color: Color,
+}
+
+impl Component for Render {
+    type Storage = VecStorage<Self>;
+}
+
+fn generate_entities(world: &mut World) {
+    world
+        .create_entity()
+        .with(Pos(Vector::new(9, 6)))
+        .with(Health::new(1))
+        .with(Render {
             glyph: 'g',
             color: Color::RED,
-            hp: 1,
-            max_hp: 1,
-        },
-        Entity {
-            pos: Vector::new(2, 4),
+        })
+        .build();
+
+    world
+        .create_entity()
+        .with(Pos(Vector::new(2, 4)))
+        .with(Health::new(1))
+        .with(Render {
             glyph: 'g',
             color: Color::RED,
-            hp: 1,
-            max_hp: 1,
-        },
-        Entity {
-            pos: Vector::new(7, 5),
+        })
+        .build();
+
+    world
+        .create_entity()
+        .with(Pos(Vector::new(7, 5)))
+        .with(Render {
             glyph: '%',
             color: Color::PURPLE,
-            hp: 0,
-            max_hp: 0,
-        },
-        Entity {
-            pos: Vector::new(4, 8),
+        })
+        .build();
+
+    world
+        .create_entity()
+        .with(Pos(Vector::new(4, 8)))
+        .with(Render {
             glyph: '%',
             color: Color::PURPLE,
-            hp: 0,
-            max_hp: 0,
-        },
-    ]
+        })
+        .build();
 }
 
 struct GameText {
@@ -93,8 +129,8 @@ struct Game {
     text: Asset<GameText>,
     map_size: Vector,
     map: Vec<Tile>,
-    entities: Vec<Entity>,
-    player_id: usize,
+    world: World,
+    player: Entity,
     tileset: Asset<HashMap<char, Image>>,
     tile_size_px: Vector,
 }
@@ -136,15 +172,22 @@ impl State for Game {
 
         let map_size = Vector::new(20, 15);
         let map = generate_map(map_size);
-        let mut entities = generate_entities();
-        let player_id = entities.len();
-        entities.push(Entity {
-            pos: Vector::new(5, 3),
-            glyph: '@',
-            color: Color::BLUE,
-            hp: 3,
-            max_hp: 5,
-        });
+
+        let mut world = World::new();
+        world.register::<Pos>();
+        world.register::<Health>();
+        world.register::<Render>();
+
+        generate_entities(&mut world);
+        let player = world
+            .create_entity()
+            .with(Pos(Vector::new(5, 3)))
+            .with(Health { max: 5, current: 3 })
+            .with(Render {
+                glyph: '@',
+                color: Color::BLUE,
+            })
+            .build();
 
         // The Square font: http://strlen.com/square/?s[]=font
         // License: CC BY 3.0 https://creativecommons.org/licenses/by/3.0/deed.en_US
@@ -168,8 +211,8 @@ impl State for Game {
             text,
             map_size,
             map,
-            entities,
-            player_id,
+            world,
+            player,
             tileset,
             tile_size_px,
         })
@@ -179,19 +222,21 @@ impl State for Game {
     fn update(&mut self, window: &mut Window) -> Result<()> {
         use quicksilver::input::ButtonState::*;
 
-        let player = &mut self.entities[self.player_id];
-        if window.keyboard()[Key::Left] == Pressed {
-            player.pos.x -= 1.0;
+        if let Some(mut pos) = self.world.write_storage::<Pos>().get_mut(self.player) {
+            if window.keyboard()[Key::Left] == Pressed {
+                pos.0.x -= 1.0;
+            }
+            if window.keyboard()[Key::Right] == Pressed {
+                pos.0.x += 1.0;
+            }
+            if window.keyboard()[Key::Up] == Pressed {
+                pos.0.y -= 1.0;
+            }
+            if window.keyboard()[Key::Down] == Pressed {
+                pos.0.y += 1.0;
+            }
         }
-        if window.keyboard()[Key::Right] == Pressed {
-            player.pos.x += 1.0;
-        }
-        if window.keyboard()[Key::Up] == Pressed {
-            player.pos.y -= 1.0;
-        }
-        if window.keyboard()[Key::Down] == Pressed {
-            player.pos.y += 1.0;
-        }
+
         if window.keyboard()[Key::Escape].is_down() {
             window.close();
         }
@@ -206,6 +251,8 @@ impl State for Game {
                 Ok(())
             })?;
         }
+
+        self.world.maintain();
 
         Ok(())
     }
@@ -268,40 +315,43 @@ impl State for Game {
             Ok(())
         })?;
 
-        // Draw entities
-        let (tileset, entities) = (&mut self.tileset, &self.entities);
-        tileset.execute(|tileset| {
-            for entity in entities.iter() {
-                if let Some(image) = tileset.get(&entity.glyph) {
-                    let pos_px = offset_px + entity.pos.times(tile_size_px);
+        let pos_storage = self.world.read_storage::<Pos>();
+        let render_storage = self.world.read_storage::<Render>();
+        self.tileset.execute(|tileset| {
+            for (pos, render) in (&pos_storage, &render_storage).join() {
+                if let Some(image) = tileset.get(&render.glyph) {
+                    let pos_px = offset_px + pos.0.times(tile_size_px);
                     window.draw(
                         &Rectangle::new(pos_px, image.area().size()),
-                        Blended(&image, entity.color),
+                        Blended(&image, render.color),
                     );
                 }
             }
+
             Ok(())
         })?;
-
-        let player = &self.entities[self.player_id];
-        let full_health_width_px = 100.0;
-        let current_health_width_px =
-            (player.hp as f32 / player.max_hp as f32) * full_health_width_px;
 
         let map_size_px = self.map_size.times(tile_size_px);
         let health_bar_pos_px = offset_px + Vector::new(map_size_px.x, 0.0);
 
-        // Full health
-        window.draw(
-            &Rectangle::new(health_bar_pos_px, (full_health_width_px, tile_size_px.y)),
-            Col(Color::RED.with_alpha(0.5)),
-        );
+        let health_storage = self.world.read_storage::<Health>();
+        if let Some(player_health) = health_storage.get(self.player) {
+            let full_health_width_px = 100.0;
+            let current_health_width_px =
+                (player_health.current as f32 / player_health.max as f32) * full_health_width_px;
 
-        // Current health
-        window.draw(
-            &Rectangle::new(health_bar_pos_px, (current_health_width_px, tile_size_px.y)),
-            Col(Color::RED),
-        );
+            // Full health
+            window.draw(
+                &Rectangle::new(health_bar_pos_px, (full_health_width_px, tile_size_px.y)),
+                Col(Color::RED.with_alpha(0.5)),
+            );
+
+            // Current health
+            window.draw(
+                &Rectangle::new(health_bar_pos_px, (current_health_width_px, tile_size_px.y)),
+                Col(Color::RED),
+            );
+        }
 
         self.text.execute(|text| {
             window.draw(
