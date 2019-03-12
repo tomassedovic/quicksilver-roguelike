@@ -77,15 +77,18 @@ impl Component for Render {
     type Storage = VecStorage<Self>;
 }
 
-// NOTE: Even just creating a `Specs::Dispatcher` panics in WASM. So
-// let's just create and run the "systems" by manually accessing the
-// storage.
-fn moving_system(world: &mut World) {
-    let data = &mut world.write_storage::<Pos>();
-    for pos in data.join() {
-        pos.0.x += 1.0;
-        if pos.0.x > 10.0 {
-            pos.0.x -= 7.0;
+struct MovingSystem;
+
+impl<'a> System<'a> for MovingSystem {
+    type SystemData = WriteStorage<'a, Pos>;
+
+    fn run(&mut self, mut positions: Self::SystemData) {
+        let positions = &mut positions;
+        for pos in positions.join() {
+            pos.0.x += 1.0;
+            if pos.0.x > 10.0 {
+                pos.0.x -= 7.0;
+            }
         }
     }
 }
@@ -138,17 +141,18 @@ struct GameText {
     inventory: Image,
 }
 
-struct Game {
+struct Game<'a, 'b> {
     text: Asset<GameText>,
     map_size: Vector,
     map: Vec<Tile>,
     world: World,
+    dispatcher: Dispatcher<'a, 'b>,
     player: Entity,
     tileset: Asset<HashMap<char, Image>>,
     tile_size_px: Vector,
 }
 
-impl State for Game {
+impl State for Game<'static, 'static> {
     /// Load the assets and initialise the game
     fn new() -> Result<Self> {
         // The Mononoki font: https://madmalik.github.io/mononoki/
@@ -188,6 +192,12 @@ impl State for Game {
 
         let mut world = World::new();
 
+        let mut dispatcher = DispatcherBuilder::new()
+            .with(MovingSystem, "health_system", &[])
+            .build();
+
+        dispatcher.setup(&mut world.res);
+
         world.register::<Pos>();
         world.register::<Health>();
         world.register::<Render>();
@@ -226,6 +236,7 @@ impl State for Game {
             map_size,
             map,
             world,
+            dispatcher,
             player,
             tileset,
             tile_size_px,
@@ -266,9 +277,7 @@ impl State for Game {
             })?;
         }
 
-        // NOTE: call all the systems here. They'll be processed
-        // sequentially.
-        moving_system(&mut self.world);
+        self.dispatcher.dispatch(&self.world.res);
 
         self.world.maintain();
 
