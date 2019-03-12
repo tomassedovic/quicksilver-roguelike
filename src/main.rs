@@ -77,6 +77,19 @@ impl Component for Render {
     type Storage = VecStorage<Self>;
 }
 
+// NOTE: Even just creating a `Specs::Dispatcher` panics in WASM. So
+// let's just create and run the "systems" by manually accessing the
+// storage.
+fn moving_system(world: &mut World) {
+    let data = &mut world.write_storage::<Pos>();
+    for pos in data.join() {
+        pos.0.x += 1.0;
+        if pos.0.x > 10.0 {
+            pos.0.x -= 7.0;
+        }
+    }
+}
+
 fn generate_entities(world: &mut World) {
     world
         .create_entity()
@@ -174,6 +187,7 @@ impl State for Game {
         let map = generate_map(map_size);
 
         let mut world = World::new();
+
         world.register::<Pos>();
         world.register::<Health>();
         world.register::<Render>();
@@ -251,6 +265,10 @@ impl State for Game {
                 Ok(())
             })?;
         }
+
+        // NOTE: call all the systems here. They'll be processed
+        // sequentially.
+        moving_system(&mut self.world);
 
         self.world.maintain();
 
