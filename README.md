@@ -140,7 +140,7 @@ The first thing we'll do is create a window and print some text on it.
 We'll do all our coding in the [`src/main.rs` file][main.rs] in the
 game repository. It's less than 300 lines total.
 
-[main.rs]: https://github.com/tomassedovic/quicksilver-roguelike/blob/guide/src/main.rs
+[main.rs]: https://github.com/tomassedovic/quicksilver-roguelike/blob/master/src/main.rs
 
 ### Empty Window
 
@@ -195,20 +195,17 @@ settings, it might be bigger than that.
 
 #### Imports
 
-Remember the very first line where we use `*` from
-`quicksilver::prelude`? That is called a wildcard import. It brings in
-every type in the [`quicksilver::prelude`][prelude] module. Without
-it, we would have to explicitly add everything we use such as
-`Settings`, `Vector`, `State`, etc.
+The first line where we use `*` from `quicksilver::prelude` called a
+wildcard import. It brings in every type in
+the [`quicksilver::prelude`][prelude] module. Without it, we would
+have to explicitly add everything we use such as `Settings`, `Vector`,
+`State`, etc.
 
 [prelude]: https://docs.rs/quicksilver/latest/quicksilver/prelude/index.html
 
-Importing everything from a module is generally frown upon in Rust.
-The crate can add more functions or types later on and these will
-break your code when you switch to the newer version.
-
-In general, adding new items into a module is not considered a
-breaking change from a crate's perspective. So it's preferred that you
+Importing everything from a module is generally frowned upon in Rust.
+A crate can add more items later on and these might break your code
+when you switch to the newer version. So it's safer if you always
 declare exactly which types you use.
 
 It also helps other people reading your code.
@@ -241,12 +238,12 @@ use quicksilver::{
 
 > The [`quicksilver::prelude`][prelude] module was added in version `0.3.10`. If you're using an older version, either upgrade or use the explicit imports.
 
-We will be using more types later on. So if you're using them
+This guide will import more types later on. So if you're using them
 explicitly, you'll need to find them yourself. The Rust compiler can
 often suggest them. And when it can't, search for them in
 the [Quicksilver documentation][qdocs].
 
-[qdocs]: https://docs.rs/quicksilver/latest/quicksilver/prelude/index.html
+[qdocs]: https://docs.rs/quicksilver/latest/quicksilver/index.html
 
 Running the game should now produce an empty window filled with black:
 
