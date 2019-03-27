@@ -1,13 +1,4 @@
-use quicksilver::{
-    geom::{Rectangle, Shape, Vector},
-    graphics::{
-        Background::{Blended, Col, Img},
-        Color, Font, FontStyle, Image,
-    },
-    input::Key,
-    lifecycle::{run, Asset, Settings, State, Window},
-    Future, Result,
-};
+use quicksilver::prelude::*;
 
 use std::collections::HashMap;
 
@@ -172,7 +163,7 @@ impl State for Game {
 
     /// Process keyboard and mouse, update the game state
     fn update(&mut self, window: &mut Window) -> Result<()> {
-        use quicksilver::input::ButtonState::*;
+        use ButtonState::*;
 
         let player = &mut self.entities[self.player_id];
         if window.keyboard()[Key::Left] == Pressed {

@@ -111,7 +111,7 @@ the end:
 ```toml
 [dependencies]
 # More features: "collisions", "complex_shapes", "immi_ui", "sounds", gamepads
-quicksilver = { version = "0.3.6", default-features = false, features = ["fonts", "saving"]}
+quicksilver = { version = "0.3.10", default-features = false, features = ["fonts", "saving"]}
 ```
 
 We're disabling most of the features. You don't have to do this, but
@@ -140,16 +140,18 @@ The first thing we'll do is create a window and print some text on it.
 We'll do all our coding in the [`src/main.rs` file][main.rs] in the
 game repository. It's less than 300 lines total.
 
-[main.rs]: https://github.com/tomassedovic/quicksilver-roguelike/blob/guide/src/main.rs
+[main.rs]: https://github.com/tomassedovic/quicksilver-roguelike/blob/master/src/main.rs
 
 ### Empty Window
 
 A Quicksilver app is all encapsulated in an item that implements the
 [`quicksilver::lifecycle::State` trait][state]:
 
-[state]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/trait.State.html
+[state]: https://docs.rs/quicksilver/latest/quicksilver/lifecycle/trait.State.html
 
 ```rust
+use quicksilver::prelude::*;
+
 struct Game;
 
 impl State for Game {
@@ -189,10 +191,42 @@ settings that we'll get to later. The `800` and `600` numbers
 represent the **logical** size of your window. Depending on your DPI
 settings, it might be bigger than that.
 
-[settings]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Settings.html
+[settings]: https://docs.rs/quicksilver/latest/quicksilver/lifecycle/struct.Settings.html
 
-And finally, we need to bring all the items we use into scope. Put
-this at the top of your file:
+#### Imports
+
+The first line where we use `*` from `quicksilver::prelude` called a
+wildcard import. It brings in every type in
+the [`quicksilver::prelude`][prelude] module. Without it, we would
+have to explicitly add everything we use such as `Settings`, `Vector`,
+`State`, etc.
+
+[prelude]: https://docs.rs/quicksilver/latest/quicksilver/prelude/index.html
+
+Importing everything from a module is generally frowned upon in Rust.
+A crate can add more items later on and these might break your code
+when you switch to the newer version. So it's safer if you always
+declare exactly which types you use.
+
+It also helps other people reading your code.
+
+However, there are situations where you will *always* want to import
+certain types. In such cases, the crate authors might provide a
+so-called *prelude* module. It contains these common types and it is
+thought of as a more stable interface that you're expect to import
+everything from.
+
+Even Rust's standard library does this. See
+the [`std::io::prelude`][io_prelude] or indeed
+the [`std::prelude`][std_prelude] which is imported automatically on
+top of every Rust file.
+
+[io_prelude]: https://doc.rust-lang.org/std/io/prelude/index.html
+[std_prelude]: https://doc.rust-lang.org/std/prelude/index.html
+
+We will be relying on the prelude import in this guide. If you want to
+be explicit about it, these are the functions and types you need to
+bring in right now:
 
 ```rust
 use quicksilver::{
@@ -201,6 +235,15 @@ use quicksilver::{
     Result,
 };
 ```
+
+> The [`quicksilver::prelude`][prelude] module was added in version `0.3.10`. If you're using an older version, either upgrade or use the explicit imports.
+
+This guide will import more types later on. So if you're using them
+explicitly, you'll need to find them yourself. The Rust compiler can
+often suggest them. And when it can't, search for them in
+the [Quicksilver documentation][qdocs].
+
+[qdocs]: https://docs.rs/quicksilver/latest/quicksilver/index.html
 
 Running the game should now produce an empty window filled with black:
 
@@ -296,11 +339,11 @@ immediately and loads the actual file in the background.
 Calling [`and_then`][and_then] will let us manipulate the value (font)
 when it's ready.
 
-[font_load]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/struct.Font.html#method.load
+[font_load]: https://docs.rs/quicksilver/latest/quicksilver/graphics/struct.Font.html#method.load
 
-[future]: https://docs.rs/quicksilver/0.3.5/quicksilver/combinators/trait.Future.html
+[future]: https://docs.rs/quicksilver/latest/quicksilver/combinators/trait.Future.html
 
-[and_then]: https://docs.rs/quicksilver/0.3.5/quicksilver/combinators/trait.Future.html#method.and_then
+[and_then]: https://docs.rs/quicksilver/latest/quicksilver/combinators/trait.Future.html#method.and_then
 
 > Quicksilver does dynamic asset loading for us!
 
@@ -308,7 +351,7 @@ Note that, "render" here doesn't mean "draw onto the
 screen". [`font.render`][font_render] takes a text and a style (font
 size & colour) and creates an image we can draw later.
 
-[font_render]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/struct.Font.html#method.render
+[font_render]: https://docs.rs/quicksilver/latest/quicksilver/graphics/struct.Font.html#method.render
 
 Font rendering takes a lot computational of work. It has to rasterise
 the glyphs, handle kerning, etc. Drawing an image is much faster. So
@@ -333,19 +376,6 @@ Ok(Self {
     mononoki_font_info,
 })
 ```
-
-We also need to a few new imports from `quicksilver`:
-
-```rust
-use quicksilver::{
-    geom::Vector,
-    graphics::{Color, Font, FontStyle, Image},
-    lifecycle::{run, Asset, Settings, State, Window},
-    Future, Result,
-};
-```
-
-(we've added the `graphics` section, `lifecycle::Asset` and `Future`).
 
 
 ### Drawing text
@@ -388,16 +418,16 @@ fn draw(&mut self, window: &mut Window) -> Result<()> {
 [`window.clear(color)`][window_clear] is quite straightforward, but
 what's the deal with this [`execute`][asset_execute] stuff?
 
-[window_clear]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Window.html#method.clear
+[window_clear]: https://docs.rs/quicksilver/latest/quicksilver/lifecycle/struct.Window.html#method.clear
 
-[asset_execute]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Asset.html#method.execute
+[asset_execute]: https://docs.rs/quicksilver/latest/quicksilver/lifecycle/struct.Asset.html#method.execute
 
 We're not storing the images directly -- we're storing them
 in an [Asset<Image>][asset]. An `Asset` wraps a `Future` that is, a
 value that might not actually exist yet (because the font did not
 finish loading).
 
-[asset]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Asset.html
+[asset]: https://docs.rs/quicksilver/latest/quicksilver/lifecycle/struct.Asset.html
 
 To get to the `Asset`'s inner value, we need to call `execute` and
 pass in a closure that operates on that asset (an [`Image`][image] in
@@ -407,8 +437,8 @@ will happen (but the program will keep going).
 > There's also a [`Asset::execute_or`] which can call a function if
 > the loading did not complete yet.
 
-[execute_or]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Asset.html#method.execute_or
-[image]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/struct.Image.html
+[execute_or]: https://docs.rs/quicksilver/latest/quicksilver/lifecycle/struct.Asset.html#method.execute_or
+[image]: https://docs.rs/quicksilver/latest/quicksilver/graphics/struct.Image.html
 
 Inside the closure we call [`window.draw`][draw] which takes two
 parameters: a [`Drawable`][drawable] (an object that can be drawn: a
@@ -417,11 +447,11 @@ parameters: a [`Drawable`][drawable] (an object that can be drawn: a
 > There's also [window.draw_ex][draw_ex] with more options such as
 > transformation to apply or `z` layer (what's on top of what).
 
-[draw_ex]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Window.html#method.draw_ex
+[draw_ex]: https://docs.rs/quicksilver/latest/quicksilver/lifecycle/struct.Window.html#method.draw_ex
 
-[draw]: https://docs.rs/quicksilver/0.3.5/quicksilver/lifecycle/struct.Window.html#method.draw
-[rectangle]: https://docs.rs/quicksilver/0.3.5/quicksilver/geom/struct.Rectangle.html
-[drawable]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/trait.Drawable.html
+[draw]: https://docs.rs/quicksilver/latest/quicksilver/lifecycle/struct.Window.html#method.draw
+[rectangle]: https://docs.rs/quicksilver/latest/quicksilver/geom/struct.Rectangle.html
+[drawable]: https://docs.rs/quicksilver/latest/quicksilver/graphics/trait.Drawable.html
 
 The background can be an image (`Background::Img`), colour fill
 (`Background::Col`) or a combination of the two
@@ -442,20 +472,6 @@ the screen and `.translate` to draw the message at the bottom.
 
 > "translate" is a fancy geometry word for moving stuff around. It
 > adds the `x`s and `y`s together.
-
-Let's add the missing imports and see the result:
-
-```rust
-use quicksilver::{
-    geom::{Shape, Vector},
-    graphics::{Background::Img, Color, Font, FontStyle, Image},
-    lifecycle::{run, Asset, Settings, State, Window},
-    Future, Result,
-};
-```
-
-We've added the `geom::Shape` trait for the `with_center` and
-`translate` methods as well as `graphics::Background::Img`.
 
 Let's run it:
 
@@ -495,11 +511,11 @@ which tries to preserve the individual pixels. This looks great at 2x,
 3x etc. scales, but not so much at a 1.3x. Especially for text
 rendering.
 
-[pixelate]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/enum.ImageScaleStrategy.html#variant.Pixelate
+[pixelate]: https://docs.rs/quicksilver/latest/quicksilver/graphics/enum.ImageScaleStrategy.html#variant.Pixelate
 
 We can switch to the [`Blur` strategy][blur] instead. In `main`:
 
-[blur]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/enum.ImageScaleStrategy.html#variant.Blur
+[blur]: https://docs.rs/quicksilver/latest/quicksilver/graphics/enum.ImageScaleStrategy.html#variant.Blur
 
 ```rust
 let settings = Settings {
@@ -555,7 +571,7 @@ struct Tile {
 The `pos` is a [`quicksilver::geom::Vector`][vector]. Your typical
 two-dimensional struct with `x` & `y` fields.
 
-[vector]: https://docs.rs/quicksilver/0.3.5/quicksilver/geom/struct.Vector.html
+[vector]: https://docs.rs/quicksilver/latest/quicksilver/geom/struct.Vector.html
 
 > You might consider defining your own types for position, size, etc.
 > `Vector` uses `f32` (you may prefer integers) and if you overload
@@ -813,7 +829,7 @@ Drawing a part of an image is done via
 the [`subimage` method][subimage]. You give it a `Rectangle` and
 returns a new `Image` covering that portion and nothing else.
 
-[subimage]: https://docs.rs/quicksilver/0.3.5/quicksilver/graphics/struct.Image.html#method.subimage
+[subimage]: https://docs.rs/quicksilver/latest/quicksilver/graphics/struct.Image.html#method.subimage
 
 > This will *not* clone the image's contents. `Image` contains a
 > reference-counted pointer back to the source, so the operation is
@@ -902,12 +918,7 @@ We need to add `quicksilver::geom::Rectangle` and
 `std::collections::HashMap` to our imports:
 
 ```rust
-use quicksilver::{
-    geom::{Rectangle, Shape, Vector},
-    graphics::{Background::Img, Color, Font, FontStyle, Image},
-    lifecycle::{run, Asset, Settings, State, Window},
-    Future, Result,
-};
+use quicksilver::prelude::*;
 
 use std::collections::HashMap;
 ```
@@ -966,12 +977,6 @@ to the pixel position on the screen (from `0` to `240`).
 And finally, the `Blended` background option allows us to apply a
 colour to the pixels on the picture. Since our glyphs are white, this
 turns them into whatever colour we set.
-
-We need to add it to our `use` statement:
-
-```rust
-quicksilver::graphics::Background::Blended
-```
 
 And that should do it:
 
@@ -1212,9 +1217,9 @@ window.draw(
 );
 ```
 
-And we need to `use` `quicksilver::graphics::Background::Col`. That's
-the final `Background` value -- representing the whole area filled
-with the given colour.
+We're using the `quicksilver::graphics::Background::Col` variant here.
+That's the final `Background` value -- representing the whole area
+filled with the given colour.
 
 ![Health bar](screenshots/11_health_bar.png)
 
@@ -1227,7 +1232,7 @@ arrow keys are pressed:
 ```rust
 /// Process keyboard and mouse, update the game state
 fn update(&mut self, window: &mut Window) -> Result<()> {
-    use quicksilver::input::ButtonState::*;
+    use ButtonState::*;
 
     let player = &mut self.entities[self.player_id];
     if window.keyboard()[Key::Left] == Pressed {
@@ -1260,8 +1265,6 @@ if window.keyboard()[Key::Escape].is_down() {
 > will press `Esc` unintentionally and lose their progress (or at
 > least be annoyed they have to restart the game). That someone will
 > be me. Please add a confirmation step before closing the window.
-
-We'll need to add `quicksilver::input::Key` to our `use` declarations.
 
 As you can see, the player can walk through everything. The goblins,
 food, even the walls! This is fine if you're making a roguelike where
@@ -1351,11 +1354,11 @@ Plus whatever unique twists you want to do! Go make games!
 
 Quicksilver tutorial:
 
-https://docs.rs/quicksilver/0.3.5/quicksilver/tutorials/index.html
+https://docs.rs/quicksilver/latest/quicksilver/tutorials/index.html
 
 Quicksilver API docs:
 
-https://docs.rs/quicksilver/0.3.5/quicksilver/index.html
+https://docs.rs/quicksilver/latest/quicksilver/index.html
 
 Rust's docs on `std::collections`:
 
