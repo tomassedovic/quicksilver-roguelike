@@ -111,7 +111,7 @@ the end:
 ```toml
 [dependencies]
 # More features: "collisions", "complex_shapes", "immi_ui", "sounds", gamepads
-quicksilver = { version = "0.3.10", default-features = false, features = ["fonts", "saving"]}
+quicksilver = { version = "0.3.22", default-features = false, features = ["fonts", "saving"]}
 ```
 
 We're disabling most of the features. You don't have to do this, but
