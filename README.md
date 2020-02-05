@@ -1282,7 +1282,7 @@ promised that Quicksilver can do a web version too.
 
 Run:
 
-    $ cargo web start --auto-reload
+    $ cargo web start --release --auto-reload
 
 and go to:
 
@@ -1296,7 +1296,7 @@ necessary.
 If you run this:
 
 ```
-$ cargo web deploy
+$ cargo web deploy --release
 ```
 
 Everything will be added to your `target/deploy` directory. Upload it
@@ -1312,7 +1312,7 @@ do this:
 ```
 $ cd ~/code/roguelike  # or whetever your code is
 $ git checkout -b gh-pages
-$ cargo web deploy
+$ cargo web deploy --release
 $ cp -r target/deploy/* .
 $ git add .
 $ git commit -m "Add wasm build"
