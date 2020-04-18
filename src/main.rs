@@ -166,19 +166,20 @@ impl State for Game {
         use ButtonState::*;
 
         let player = &mut self.entities[self.player_id];
-        if window.keyboard()[Key::Left] == Pressed {
+        let keyboard = window.keyboard();
+        if keyboard[Key::Left] == Pressed {
             player.pos.x -= 1.0;
         }
-        if window.keyboard()[Key::Right] == Pressed {
+        if keyboard[Key::Right] == Pressed {
             player.pos.x += 1.0;
         }
-        if window.keyboard()[Key::Up] == Pressed {
+        if keyboard[Key::Up] == Pressed {
             player.pos.y -= 1.0;
         }
-        if window.keyboard()[Key::Down] == Pressed {
+        if keyboard[Key::Down] == Pressed {
             player.pos.y += 1.0;
         }
-        if window.keyboard()[Key::Escape].is_down() {
+        if keyboard[Key::Escape].is_down() {
             window.close();
         }
         Ok(())
