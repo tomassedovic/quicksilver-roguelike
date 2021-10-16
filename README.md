@@ -1105,7 +1105,7 @@ author too!
 In `Game::new`:
 
 ```rust
-let square_font_info = Asset::new(Font::load(font_square).and_then(move |font| {
+let square_font_info = Asset::new(Font::load(font_mononoki).and_then(move |font| {
     font.render(
         "Square font by Wouter Van Oortmerssen, terms: CC BY 3.0",
         &FontStyle::new(20.0, Color::BLACK),
