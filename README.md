@@ -1060,7 +1060,7 @@ font file name and then replace `font_mononoki` in the `tileset`'s
 let font_square = "square.ttf";
 let game_glyphs = "#@g.%";
 let tile_size_px = Vector::new(12, 24);
-let tileset = Asset::new(Font::load(font_mononoki).and_then(move |text| {
+let tileset = Asset::new(Font::load(font_square).and_then(move |text| {
     let tiles = text
         .render(game_glyphs, &FontStyle::new(tile_size_px.y, Color::WHITE))
         .expect("Could not render the font tileset.");
